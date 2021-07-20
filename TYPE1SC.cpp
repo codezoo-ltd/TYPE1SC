@@ -758,8 +758,6 @@ int TYPE1SC::sendATcmd(char *szCmd, char *szResponse, int nResponseBufSize,
 	_serial.setTimeout(ulWaitDelay + 500);
 	_serial.println(szCmd);
 
-	_serial.flush();
-
 	nRet = readATresponseLine(szResponse, nResponseBufSize, szResponseFilter,
 			ulWaitDelay);
 
@@ -780,8 +778,6 @@ int TYPE1SC::sendATcmd(char *szCmd, char *aLine[], int nMaxLine,
 
 	_serial.setTimeout(ulWaitDelay + 500);
 	_serial.println(szCmd);
-
-	_serial.flush();
 
 	nRet = readATresponseLine(aLine, nMaxLine, ulWaitDelay);
 
@@ -921,7 +917,6 @@ int TYPE1SC::readATresponseLine(char *aLine[], int nMaxLine,
 }
 
 void TYPE1SC::TYPE1SC_serial_clearbuf() {
-	_serial.flush();
 
 	while (_serial.available()) {
 		_serial.read();
