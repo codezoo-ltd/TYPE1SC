@@ -18,22 +18,24 @@ class TYPE1SC {
 		 * object. The serial port should already be initialised when initialising
 		 * this library.
 		 */
-		TYPE1SC(Stream &serial, Stream &debug, uint8_t pwr_pin, uint8_t status_pin);
+		TYPE1SC(Stream &serial, Stream &debug);
+		TYPE1SC(Stream &serial, Stream &debug, uint8_t pwr_pin, uint8_t reset_pin, 
+				uint8_t wakeup_pin);
 
 		/*
 		 * Power on the module.
 		 */
-		int pwrON(void);
+		void pwrON(void);
 
 		/*
 		 * Power off the module.
 		 */
-		int pwrOFF(void);
+		void pwrOFF(void);
 
 		/*
-		 * Power status check the module.
+		 * ext Antenna Enable.
 		 */
-		int isPwrON(void);
+		void extAntON(uint8_t extAnt_pin);
 
 		/*
 		 * Initialization the module.
@@ -64,6 +66,99 @@ class TYPE1SC {
 		 * Set Change device functionality. (0-1)
 		 */
 		int setCFUN(int value);
+
+
+		/*
+		 * Set Change MQTT Event functionality. (0-1)
+		 */
+		int setMQTT_EV(int value);
+
+		/*
+		 * Set MQTT Client ID & Connection Address.
+		 */
+		int setMQTT_NODES(char *client_id, char *mqtt_addr);
+
+		/*
+		 * Set MQTT Session Timeout. (1 - 65535, Default 600 sec)
+		 */
+		int setMQTT_TIMEOUT(uint32_t value);
+
+		/*
+		 * MQTT Server Connect
+		 */
+		int MQTT_Connect(void);
+
+		/*
+		 * MQTT Server DisConnect
+		 */
+		int MQTT_DisConnect(void);
+
+		/*
+		 * MQTT Subscribe Topic
+		 * qos : 0 - at most one delivery (default)
+         *       1 - Delivered at least once
+		 *       2 - Exactly one delivery
+		 */		
+		int MQTT_SUBSCRIBE(int qos, char *topic);
+
+		/*
+		 * MQTT UnSubscribe Topic
+		 */		
+		int MQTT_UnSUBSCRIBE(char *topic);	
+
+		/*
+		 * MQTT Publish Topic
+		 * qos : 0 - at most one delivery (default)
+         *       1 - Delivered at least once
+		 *       2 - Exactly one delivery
+		 */		
+		int MQTT_Publish(int qos, char *topic, int szData, char *Data);
+
+
+		/*
+		 * Set Change AWS_IOT Event functionality. (0-1)
+		 */
+		int setAWSIOT_EV(int value);									
+
+		/*
+		 * Set AWS_IOT Connection Property
+		 */
+		int setAWSIOT_CONN(char *client_id, char *aws_addr, int tlsProfileNo);
+
+		/*
+		 * Set AWS_IOT Timeout. (1 - 1200, Defalut 1200 sec)
+		 */
+		int setAWSIOT_TIMEOUT(int value);
+
+		/*
+		 * AWS_IOT Connect
+		 */
+		int AWSIOT_Connect(void);
+
+		/*
+		 * AWS_IOT DisConnect
+		 */
+		int AWSIOT_DisConnect(void);
+
+		/*
+		 * AWS_IOT Subscribe Topic
+		 */		
+		int AWSIOT_SUBSCRIBE(char *topic);
+
+		/*
+		 * AWS_IOT UnSubscribe Topic
+		 */		
+		int AWSIOT_UnSUBSCRIBE(char *topic);
+
+		/*
+		 * AWS_IOT Publish Topic
+		 */		
+		int AWSIOT_Publish(char *topic, char *Data);								
+
+		/*
+		 * Set Change device APN.
+		 */
+		int setAPN(char *apn);		
 
 		/*
 		 * Request international mobile subscriber identity.
@@ -167,14 +262,23 @@ class TYPE1SC {
 		/*
 		 * Reset the module.
 		 */
-		//	void TYPE1SC_reset(void);
+		void reset(void);
 
 	private:
+		int sendATcmdOmitOK(char *szCmd, char *szResponse, int nResponseBufSize,
+				const char *szResponseFilter, unsigned long ulWaitDelay=10000);
+
+		int sendATcmdOmitOK(char *szCmd, char *szResponse, int nResponseBufSize,
+				const char *szResponseFilter, char *SendData, int SendDataSize, unsigned long ulWaitDelay=10000);	
+
 		int sendATcmd(char *szCmd, char *szResponse, int nResponseBufSize,
 				const char *szResponseFilter, unsigned long ulWaitDelay = 2000);
 
 		int sendATcmd(char *szCmd, char *aLine[], int nMaxLine,
 				unsigned long ulWaitDelay = 2000);
+
+		int readATresponseLineOmitOK(char *szLine, int nLineBufSize,
+				const char *szResponseFilter, unsigned long ulDelay);		
 
 		int readATresponseLine(char *szLine, int nLineBufSize,
 				const char *szResponseFilter, unsigned long ulDelay);
@@ -188,7 +292,9 @@ class TYPE1SC {
 		Stream &_serial;
 		Stream &_debug;
 		uint8_t _pwr_pin;
-		uint8_t _status_pin;
+		uint8_t _reset_pin; 
+		uint8_t _wakeup_pin;
+		uint8_t _extAnt_pin;
 		int _timeOut = 0;
 		int _nSocket = 1;
 };

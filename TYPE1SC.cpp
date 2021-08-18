@@ -22,59 +22,45 @@ extern "C" {
 #define BG_LINE 30 // Limit 30 Line
 //#define __TYPE_1SC_DEBUG		//Debug mode
 
-TYPE1SC::TYPE1SC(Stream &serial, Stream &debug, uint8_t pwr_pin, uint8_t status_pin)
-	: _serial(serial), _debug(debug), _pwr_pin(pwr_pin),
-	_status_pin(status_pin) {
+TYPE1SC::TYPE1SC(Stream &serial, Stream &debug)
+	: _serial(serial), _debug(debug){
+		_timeOut = 2000; /* default Timeout */
+		_serial.setTimeout(
+				(_timeOut + 500)); /* +500ms, Serial TX/RX Timeout default 2000 */
+	}
+
+TYPE1SC::TYPE1SC(Stream &serial, Stream &debug, uint8_t pwr_pin, uint8_t reset_pin, 
+		uint8_t wakeup_pin)
+	: _serial(serial), _debug(debug), _pwr_pin(pwr_pin), _reset_pin(reset_pin),
+	_wakeup_pin(wakeup_pin) {
 		_timeOut = 2000; /* default Timeout */
 		_serial.setTimeout(
 				(_timeOut + 500)); /* +500ms, Serial TX/RX Timeout default 2000 */
 		pinMode(_pwr_pin, OUTPUT);
-		pinMode(_status_pin, INPUT); /* PULL None */
+		pinMode(_reset_pin, OUTPUT);
+		pinMode(_wakeup_pin, OUTPUT);
+
+		digitalWrite(_pwr_pin, HIGH);
+		digitalWrite(_reset_pin, HIGH);
+		digitalWrite(_wakeup_pin, HIGH);
 	}
 
-int TYPE1SC::pwrON() {
-	int ret;
-
-	delay(50); // Setup Time : Greater than or equal to 30ms
+void TYPE1SC::pwrON() {
 	digitalWrite(_pwr_pin, HIGH);
-	delay(600); // Hold Time : Greater than or equal to 500ms
-	digitalWrite(_pwr_pin, LOW);
-	delay(5000); // Release Time : Greater than or equal to 4800ms
-
-	ret = !(digitalRead(_status_pin));
-
-	return ret;
+	delay(2000);
 }
 
-int TYPE1SC::pwrOFF() {
-	Countdown oCountDown(60000); /* Max Timeout 1 minute */
-	int ret = 1;
-
-	digitalWrite(_pwr_pin, HIGH);
-	delay(800); // Hold Time : Greater than or equal to 650ms
+void TYPE1SC::pwrOFF() {
 	digitalWrite(_pwr_pin, LOW);
-	delay(3000); // Release Time : Greater than or equal to 2000ms
-
-	do {
-		if (digitalRead(_status_pin)) {
-			delay(1000);
-		} else {
-			ret = 0;
-			break;
-		}
-	} while (!oCountDown.expired());
-
-	return ret;
+	delay(3000); 
 }
 
-int TYPE1SC::isPwrON() {
-	int ret;
+void TYPE1SC::extAntON(uint8_t extAnt_pin) {
+	_extAnt_pin = extAnt_pin;
 
-	delay(50); // Setup Time : Greater than or equal to 30ms
-
-	ret = digitalRead(_status_pin);
-
-	return ret;
+	pinMode(_extAnt_pin, OUTPUT);
+	digitalWrite(_extAnt_pin, HIGH);
+	delay(1000); 
 }
 
 int TYPE1SC::init() {
@@ -200,6 +186,449 @@ int TYPE1SC::setCFUN(int value) {
 	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
 
 	return ret;
+}
+
+int TYPE1SC::setMQTT_EV(int value) {
+	char szCmd[128];
+	char resBuffer[16];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%MQTTEV=\"ALL\",%d", value);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;
+}
+
+int TYPE1SC::setMQTT_NODES(char *client_id, char *mqtt_addr) {
+	char szCmd[512];
+	char resBuffer[16];	
+	char clientID[128];
+	char mqttADDR[256];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	memset(clientID, 0x0, sizeof(clientID));
+	strcpy(clientID, client_id);
+
+	memset(mqttADDR, 0x0, sizeof(mqttADDR));
+	strcpy(mqttADDR, mqtt_addr);	
+
+	sprintf(szCmd, "AT%%MQTTCFG=\"NODES\",1,\"%s\",\"%s\"", clientID, mqttADDR);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;	
+}
+
+int TYPE1SC::setMQTT_TIMEOUT(uint32_t value) {
+	char szCmd[128];
+	char resBuffer[16];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%MQTTCFG=\"PROTOCOL\",1,0,%u,1", value);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;
+}
+
+int TYPE1SC::MQTT_Connect(void) {
+	char szCmd[128];
+	char resBuffer[128];
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%MQTTCMD=\"CONNECT\",1");
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"CONCONF\",1", 20000)) {
+		char *pszState = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			if (*pszState == '0') {
+				SWIR_TRACE(F("connect MQTT Server..."));
+				return 0;
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Not connect MQTT Server..."));
+	return 1;	
+}
+
+int TYPE1SC::MQTT_DisConnect(void) {
+	char szCmd[128];
+	char resBuffer[128];
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%MQTTCMD=\"DISCONNECT\",1");
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"DISCONF\",1",20000)) {
+		char *pszState = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			if (*pszState == '0') {
+				SWIR_TRACE(F("disconnect MQTT Server..."));
+				return 0;
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Not disconnect MQTT Server..."));
+	return 1;	
+}
+
+int TYPE1SC::MQTT_SUBSCRIBE(int qos, char *topic) {
+	char szCmd[128];
+	char resBuffer[128];
+	char clientTopic[128];
+
+	memset(clientTopic, 0x0, sizeof(clientTopic));
+	strcpy(clientTopic, topic);
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%MQTTCMD=\"SUBSCRIBE\",1,%d,\"%s\"",qos,clientTopic);
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"SUBCONF\",1", 20000)) {
+		char *pszState = NULL;
+		char *pszState2 = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, ",");
+			if (pszState != NULL) {
+				pszState++;
+				if (*pszState == '0') {
+					SWIR_TRACE(F("Subscription success..."));
+					return 0;
+				}
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Subscription failed..."));
+	return 1;	
+}
+
+int TYPE1SC::MQTT_UnSUBSCRIBE(char *topic) {
+	char szCmd[128];
+	char resBuffer[128];
+	char clientTopic[128];
+
+	memset(clientTopic, 0x0, sizeof(clientTopic));
+	strcpy(clientTopic, topic);
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%MQTTCMD=\"UNSUBSCRIBE\",1,\"%s\"",clientTopic);
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"UNSCONF\",1", 5000)) {
+		char *pszState = NULL;
+		char *pszState2 = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, ",");
+			if (pszState != NULL) {
+				pszState++;
+				if (*pszState == '0') {
+					SWIR_TRACE(F("Unsubscription success..."));
+					return 0;
+				}
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Unsubscription failed..."));
+	return 1;	
+}
+
+int TYPE1SC::MQTT_Publish(int qos, char *topic, int szData, char *Data) {
+	char szCmd[256];
+	char resBuffer[256];
+	char clientTopic[128];
+	char clientData[128];
+
+	memset(clientTopic, 0x0, sizeof(clientTopic));
+	strcpy(clientTopic, topic);
+	memset(clientData, 0x0, sizeof(clientData));
+	strcpy(clientData, Data);	
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf( szCmd, "AT%%MQTTCMD=\"PUBLISH\",1,%d,0,\"%s\",%d",qos,clientTopic,(szData+1) );
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"PUBRCV\",1", clientData, szData, 20000)) {
+		char *pszState = NULL;
+		char *pszState2 = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, ",");
+			if (pszState != NULL) {
+				pszState++;
+				pszState2 = pszState;
+				pszState = strstr(pszState2, ",");
+				if (pszState != NULL){
+					pszState++;
+					if ( atoi(pszState) == (szData+1) ){
+						SWIR_TRACE(F("Publish success..."));
+						TYPE1SC_serial_clearbuf();
+						return 0;
+				    }
+				}				
+			}
+		}
+	}
+	TYPE1SC_serial_clearbuf();
+	SWIR_TRACE(F("Publish failed..."));
+	return 1;	
+}
+
+int TYPE1SC::setAWSIOT_EV(int value) {
+	char szCmd[128];
+	char resBuffer[16];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%AWSIOTEV=\"ALL\",%d", value);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;
+}
+
+int TYPE1SC::setAWSIOT_CONN(char *client_id, char *aws_addr, int tlsProfileNo) {
+	char szCmd[512];
+	char resBuffer[16];	
+	char clientID[128];
+	char awsADDR[256];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	memset(clientID, 0x0, sizeof(clientID));
+	strcpy(clientID, client_id);
+
+	memset(awsADDR, 0x0, sizeof(awsADDR));
+	strcpy(awsADDR, aws_addr);	
+
+	sprintf(szCmd, "AT%%AWSIOTCFG=\"CONN\",\"%s\",%d,\"%s\"", awsADDR, tlsProfileNo, clientID);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;	
+}
+
+int TYPE1SC::setAWSIOT_TIMEOUT(int value) {
+	char szCmd[128];
+	char resBuffer[16];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%AWSIOTCFG=\"PROTOCOL\",%d,0", value);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;
+}
+
+int TYPE1SC::AWSIOT_Connect(void) {
+	char szCmd[128];
+	char resBuffer[128];
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%AWSIOTCMD=\"CONNECT\"");
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"CONCONF\"", 20000)) {
+		char *pszState = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			if (*pszState == '0') {
+				SWIR_TRACE(F("connect AWS IOT Service..."));
+				return 0;
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Not connect AWS IOT Service..."));
+	return 1;	
+}
+
+int TYPE1SC::AWSIOT_DisConnect(void) {
+	char szCmd[128];
+	char resBuffer[128];
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%AWSIOTCMD=\"DISCONNECT\"");
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"DISCONF\"",20000)) {
+		char *pszState = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			if (*pszState == '0') {
+				SWIR_TRACE(F("disconnect AWS IOT Service..."));
+				return 0;
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Not disconnect AWS IOT Service..."));
+	return 1;	
+}
+
+int TYPE1SC::AWSIOT_SUBSCRIBE(char *topic) {
+	char szCmd[128];
+	char resBuffer[128];
+	char clientTopic[128];
+
+	memset(clientTopic, 0x0, sizeof(clientTopic));
+	strcpy(clientTopic, topic);
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%AWSIOTCMD=\"SUBSCRIBE\",\"%s\"", clientTopic);
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"SUBCONF\"", 20000)) {
+		char *pszState = NULL;
+		char *pszState2 = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, ",");
+			if (pszState != NULL) {
+				pszState++;
+				if (*pszState == '0') {
+					SWIR_TRACE(F("Subscription success..."));
+					return 0;
+				}
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Subscription failed..."));
+	return 1;	
+}
+
+int TYPE1SC::AWSIOT_UnSUBSCRIBE(char *topic) {
+	char szCmd[128];
+	char resBuffer[128];
+	char clientTopic[128];
+
+	memset(clientTopic, 0x0, sizeof(clientTopic));
+	strcpy(clientTopic, topic);
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%AWSIOTCMD=\"UNSUBSCRIBE\",\"%s\"",clientTopic);
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"UNSCONF\"", 5000)) {
+		char *pszState = NULL;
+		char *pszState2 = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, ",");
+			if (pszState != NULL) {
+				pszState++;
+				if (*pszState == '0') {
+					SWIR_TRACE(F("Unsubscription success..."));
+					return 0;
+				}
+			}
+		}
+	}
+
+	SWIR_TRACE(F("Unsubscription failed..."));
+	return 1;	
+}
+
+int TYPE1SC::AWSIOT_Publish(char *topic, char *Data) {
+	char szCmd[256];
+	char resBuffer[256];
+	char clientTopic[128];
+	char clientData[256];
+
+	memset(clientTopic, 0x0, sizeof(clientTopic));
+	strcpy(clientTopic, topic);
+	memset(clientData, 0x0, sizeof(clientData));
+	strcpy(clientData, Data);	
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf( szCmd, "AT%%AWSIOTCMD=\"PUBLISH\",\"%s\",\"%s\"",clientTopic,clientData );
+
+	if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"PUBRCV\"", 20000)) {
+		char *pszState = NULL;
+		char *pszState2 = NULL;
+
+		pszState = strstr(resBuffer, ",");
+		if (pszState != NULL) {
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, ",");
+			if (pszState != NULL) {
+				pszState+=2;
+				//SWIR_TRACE(F("Publish : %s"),pszState);
+				if ( strncmp(pszState, clientData, strlen(clientData)) == 0 ){
+					SWIR_TRACE(F("Publish success..."));
+					TYPE1SC_serial_clearbuf();
+					return 0;
+				}				
+			}
+		}
+	}
+	TYPE1SC_serial_clearbuf();
+	SWIR_TRACE(F("Publish failed..."));
+	return 1;	
+}
+
+
+int TYPE1SC::setAPN(char *apn) {
+	char szCmd[128];
+	char apnAddr[64];
+	char resBuffer[16];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	memset(apnAddr, 0x0, sizeof(apnAddr));
+	strcpy(apnAddr, apn);
+
+	sprintf(szCmd, "AT+CGDCONT=1,\"IP\",\"%s\"", apnAddr);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;	
 }
 
 int TYPE1SC::getCIMI(char *szCIMI, int nBufferSize) {
@@ -693,7 +1122,7 @@ int TYPE1SC::socketSend(const char *str) {
 #define HEX_PAIR_TO_BYTE(h, l) ((HEX_CHAR_TO_NIBBLE(h) << 4) + HEX_CHAR_TO_NIBBLE(l))
 int TYPE1SC::socketRecv(char *buffer, int bufferSize, int *recvSize) {
 	char    szCmd[32];
-	char    resBuffer[1048];	/* Max 512 byte Receive */
+	char    resBuffer[1600];	/* Max 800 byte Receive */
 	int		RecvSize,ret;
 	char	*pszState = NULL;
 	char	*pszState2 = NULL;
@@ -747,6 +1176,55 @@ int TYPE1SC::socketRecv(char *buffer, int bufferSize, int *recvSize) {
 	return ret;
 }
 
+int TYPE1SC::sendATcmdOmitOK(char *szCmd, char *szResponse, int nResponseBufSize,
+		const char *szResponseFilter, unsigned long ulWaitDelay) {
+	int nRet = 0;
+
+	memset(szResponse, 0, nResponseBufSize);
+
+	SWIR_TRACE(F("sendATcmd (%s) - %d..."), szCmd, ulWaitDelay);
+
+	_serial.setTimeout(ulWaitDelay + 500);
+	_serial.println(szCmd);
+
+	nRet = readATresponseLineOmitOK(szResponse, nResponseBufSize, szResponseFilter,
+			ulWaitDelay);
+
+	if (nRet == 0) {
+		SWIR_TRACE(F("...sendATcmd OK"));
+	} else {
+		SWIR_TRACE(F("...sendATcmd Fails"));
+	}
+
+	return nRet;
+}
+
+int TYPE1SC::sendATcmdOmitOK(char *szCmd, char *szResponse, int nResponseBufSize,
+		const char *szResponseFilter, char *SendData, int SendDataSize, unsigned long ulWaitDelay) {
+	int nRet = 0;
+
+	memset(szResponse, 0, nResponseBufSize);
+
+	SWIR_TRACE(F("sendATcmd (%s) - %d..."), szCmd, ulWaitDelay);
+
+	_serial.setTimeout(ulWaitDelay + 500);
+	_serial.println(szCmd);
+
+	for(int i=0; i<SendDataSize; i++)
+		_serial.print(SendData[i]);
+
+	nRet = readATresponseLineOmitOK(szResponse, nResponseBufSize, szResponseFilter,
+			ulWaitDelay);
+
+	if (nRet == 0) {
+		SWIR_TRACE(F("...sendATcmd OK"));
+	} else {
+		SWIR_TRACE(F("...sendATcmd Fails"));
+	}
+
+	return nRet;
+}
+
 int TYPE1SC::sendATcmd(char *szCmd, char *szResponse, int nResponseBufSize,
 		const char *szResponseFilter, unsigned long ulWaitDelay) {
 	int nRet = 0;
@@ -785,6 +1263,72 @@ int TYPE1SC::sendATcmd(char *szCmd, char *aLine[], int nMaxLine,
 		SWIR_TRACE(F("...sendATcmd OK"));
 	} else {
 		SWIR_TRACE(F("...sendATcmd Fails"));
+	}
+
+	return nRet;
+}
+
+int TYPE1SC::readATresponseLineOmitOK(char *szLine, int nLineBufSize,
+		const char *szResponseFilter,
+		unsigned long ulDelay) {
+	int nbLine = 0;
+	char *aLine[BG_LINE];
+	Countdown oCountdown(ulDelay);
+	char *pszSubstr = NULL;
+	int nRet = 3;
+
+	memset(szLine, 0, nLineBufSize);
+
+	do {
+		if (_serial.available()) {
+			String sStr;
+			sStr = _serial.readStringUntil('\n');
+			int nLen = sStr.length();
+
+			if (nLen > 1) {
+				aLine[nbLine] = (char *)malloc(nLen + 1);
+				sStr.toCharArray(aLine[nbLine], nLen);
+				aLine[nbLine][nLen] = 0;
+
+				pszSubstr = strstr(aLine[nbLine], szResponseFilter);
+				if (pszSubstr != NULL) {
+					SWIR_TRACE(F("Found OK"));
+					pszSubstr += strlen(szResponseFilter);
+					while (isSpace(*pszSubstr)) // trim heading
+					{
+						pszSubstr++;
+					}
+					char *pTemp = pszSubstr;
+					while (pTemp < (aLine[nbLine] + strlen(aLine[nbLine]))) // trim ending
+					{
+						if (*pTemp == '\n') // remove cariage return
+						{
+							*pTemp = 0; // zero terminate string
+							break;
+						}
+						pTemp++;
+					}
+					SWIR_TRACE(F("Filtered response: %s\n"), pszSubstr);
+					strcpy(szLine, pszSubstr);
+					nbLine++;
+					nRet = 0;					
+					break;
+				}
+
+				nbLine++;
+			}
+		}
+		if (nbLine >= BG_LINE) {
+			break;
+		}
+	} while (!oCountdown.expired());
+
+	SWIR_TRACE(F("readATresponseLine: %d line(s)\n"), nbLine);
+
+	int i;
+	for (i = 0; i < nbLine; i++) {
+		SWIR_TRACE(F("line[%d]: %s\n"), i, aLine[i]);
+		free(aLine[i]);
 	}
 
 	return nRet;
@@ -956,4 +1500,15 @@ int TYPE1SC::disablePSM() {
 	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
 
 	return ret;
+}
+
+void TYPE1SC::reset() {
+	char szCmd[16];
+	char resBuffer[16];
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT+CFUN=1,1");
+
+	sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);	
 }
