@@ -1023,13 +1023,16 @@ int TYPE1SC::socketInfo(char *info, int infoSize){
 
 	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "SOCKETCMD:\"", 5000);
 	if(!ret){
-		char *pBuffer1, *pBuffer2;
+		char *pBuffer;
 
-		pBuffer1 = resBuffer;
-		pBuffer2 = strstr(pBuffer1, "\"");
+		pBuffer = resBuffer;
 
-		if(pBuffer2 != NULL){
-			memcpy(info, pBuffer1, pBuffer2-pBuffer1);
+		if(*pBuffer == 'A'){
+			strcpy(info, "ACTIVATED");
+		}else if(*pBuffer == 'D'){
+			strcpy(info, "DEACTIVATED");
+		}else{
+			strcpy(info, "FAIL");
 		}
 	}
 
