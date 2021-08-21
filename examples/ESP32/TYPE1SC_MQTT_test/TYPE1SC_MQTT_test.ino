@@ -1,15 +1,12 @@
 #include "TYPE1SC.h"
 
 #define DebugSerial Serial
-#define M1Serial Serial1 // Arduino
+#define M1Serial Serial2 // ESP32
+#define PWR_PIN 5
+#define RST_PIN 18
+#define WAKEUP_PIN 19
 
-//#define PWR_PIN 2
-//#define STAT_PIN 3
-#define PWR_PIN 25
-#define STAT_PIN 26
-#define DHTPIN A0
-
-// AM2302(DHT22) Temperature & Humidity Sensor
+#define DHTPIN 33
 #include "DHT.h" /* https://github.com/markruys/arduino-DHT */
 // Uncomment whatever type you're using!
 //#define DHTTYPE DHT11   // DHT 11
@@ -18,13 +15,10 @@
 
 DHT dht(DHTPIN, DHTTYPE);
 
-TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, STAT_PIN);
+TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
 
 void setup() {
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
   dht.begin();
-  delay(2000);
   // put your setup code here, to run once:
   M1Serial.begin(115200);
   DebugSerial.begin(115200);
@@ -35,10 +29,6 @@ void setup() {
     DebugSerial.println("TYPE1SC Module Error!!!");
   }
 
-  /* Board Reset */
-  TYPE1SC.reset();
-
-  delay(2000);
   /* Network Regsistraiton Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");
@@ -46,32 +36,17 @@ void setup() {
   }
 
   DebugSerial.println("TYPE1SC Module Ready!!!");
-}
-
-void loop() {
-
-  digitalWrite(LED_BUILTIN,
-               HIGH); // turn the LED on (HIGH is the voltage level)
-#if 0  
-  /* Enter a DNS address to get an IP address */
-  char IPAddr[32];
-  if (TYPE1SC.getIPAddr("echo.mbedcloudtesting.com", IPAddr, sizeof(IPAddr)) == 0) {
-    DebugSerial.print("IP Address : ");
-    DebugSerial.println(IPAddr);
-  }
-  delay(1000);
-#endif
 
   char _IP[] = "broker.hivemq.com";
   char _NodeID[] = "Cellular_node";
   char _Topic[] = "type1sc/0/test";
   char _message[64];
   uint32_t conn_timeout = 1200;
-  float t = 0.0; // Stores temperature value
-  float h = 0.0; // Stores humidity value
-  char temp[8];
-  char humi[8];
-  int cnt = 10;
+  float t = 0.0;
+  float h = 0.0;
+  char temp[8]; // Stores temperature value
+  char humi[8]; // Stores humidity value
+
   /*
    * qos : 0 - at most one delivery (default)
    *       1 - Delivered at least once
@@ -99,29 +74,27 @@ void loop() {
   if (TYPE1SC.MQTT_SUBSCRIBE(qos, _Topic) == 0)
     DebugSerial.println("5.Subscribe to the topic on the endpoint");
 
-  /* 6 : Publish data to broker */
-  while (cnt--) {
-    /*Get Temperature & Humidity */
-    while (1) {
-      /* Get DHT22 Sensor */
-      t = dht.readTemperature();
-      h = dht.readHumidity();
-      if (String(t) != "nan" && String(h) != "nan")
-        break;
-      else {
-        DebugSerial.println("case nan ...");
-        delay(1000);
-      }
+  /*Get Temperature & Humidity */
+  while (1) {
+    /* Get DHT22 Sensor */
+    t = dht.readTemperature();
+    h = dht.readHumidity();
+    if (String(t) != "nan" && String(h) != "nan")
+      break;
+    else {
+      DebugSerial.println("case nan ...");
+      delay(1000);
     }
-
-    dtostrf(t, 4, 1, temp);
-    dtostrf(h, 4, 1, humi);
-
-    memset(_message, 0x0, sizeof(_message));
-    sprintf(_message, "Temperature/%s, Humidity/%s", temp, humi);
-    if (TYPE1SC.MQTT_Publish(qos, _Topic, strlen(_message), _message) == 0)
-      DebugSerial.println("6.Publish data to broker");
   }
+
+  dtostrf(t, 4, 1, temp);
+  dtostrf(h, 4, 1, humi);
+
+  memset(_message, 0x0, sizeof(_message));
+  sprintf(_message, "Temperature/%s, Humidity/%s", temp, humi);
+  /* 6 : Publish data to broker */
+  if (TYPE1SC.MQTT_Publish(qos, _Topic, strlen(_message), _message) == 0)
+    DebugSerial.println("6.Publish data to broker");
 
   /* 7 : UnSubscribe to the topic on the endpoint */
   if (TYPE1SC.MQTT_UnSUBSCRIBE(_Topic) == 0) {
@@ -139,11 +112,6 @@ void loop() {
   /* 0 : Disable MQTT events */
   if (TYPE1SC.setMQTT_EV(0) == 0)
     DebugSerial.println("9.Disable MQTT events");
-
-  DebugSerial.println("/=========================================/");
-  DebugSerial.println("");
-  digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
-
-  delay(600000);
-  //  delay(20000);
 }
+
+void loop() { delay(1000); }

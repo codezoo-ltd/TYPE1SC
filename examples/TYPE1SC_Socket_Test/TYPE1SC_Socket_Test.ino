@@ -1,7 +1,7 @@
 #include "TYPE1SC.h"
 
 #define DebugSerial Serial
-#define M1Serial Serial1  //Arduino 
+#define M1Serial Serial1 // Arduino
 //#define M1Serial Serial2 //ESP32
 
 #define PWR_PIN 25
@@ -14,7 +14,7 @@
 #include "DHT.h" /* https://github.com/markruys/arduino-DHT */
 // Uncomment whatever type you're using!
 //#define DHTTYPE DHT11   // DHT 11
-#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
+#define DHTTYPE DHT22 // DHT 22  (AM2302), AM2321
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -218,7 +218,8 @@ INFO:
 
   digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
 #else
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
+  digitalWrite(LED_BUILTIN,
+               HIGH); // turn the LED on (HIGH is the voltage level)
 
   String WApiKey = "OWS3SXKWM35SKANY"; // Thing Speak Write API Key 16Character
   float temp = 0.0;
@@ -265,17 +266,17 @@ INFO:
   }
 
   String data = "GET /update";
-  data += "?api_key=" + WApiKey + "&" + fieldTemp + "=" + String(temp) + "&" + fieldHumi + "=" + String(humi);
+  data += "?api_key=" + WApiKey + "&" + fieldTemp + "=" + String(temp) + "&" +
+          fieldHumi + "=" + String(humi);
   data += " HTTP/1.1\r\n";
   data += "Host: api.thingspeak.com\r\n";
   data += "Connection: close\r\n\r\n";
-  
+
   /* 3 :TCP Socket Send Data */
   if (TYPE1SC.socketSend(data.c_str()) == 0) {
     DebugSerial.print("[HTTP Send] >>  ");
     DebugSerial.println(data);
-  }
-  else
+  } else
     DebugSerial.println("Send Fail!!!");
 
   /* 4 :TCP Socket Recv Data */
@@ -300,7 +301,7 @@ INFO:
   /* 6 :TCP Socket DeActivation */
   if (TYPE1SC.socketClose() == 0)
     DebugSerial.println("TCP Socket Close!!!");
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW    
+  digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
 
 #endif
   delay(60000);
