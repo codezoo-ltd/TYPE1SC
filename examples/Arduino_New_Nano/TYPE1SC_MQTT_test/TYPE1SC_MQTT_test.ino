@@ -1,12 +1,12 @@
 #include "TYPE1SC.h"
+#if !defined(__AVR_ATmega4809__)
+#include <avr/dtostrf.h>
+#endif
 
 #define DebugSerial Serial
-#define M1Serial Serial2 // ESP32
-#define PWR_PIN 5
-#define RST_PIN 18
-#define WAKEUP_PIN 19
+#define M1Serial Serial1
 
-#define DHTPIN 33
+#define DHTPIN A0
 #include "DHT.h" /* https://github.com/markruys/arduino-DHT */
 // Uncomment whatever type you're using!
 //#define DHTTYPE DHT11   // DHT 11
@@ -15,9 +15,13 @@
 
 DHT dht(DHTPIN, DHTTYPE);
 
-TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
+TYPE1SC TYPE1SC(M1Serial, DebugSerial);
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  /* DHT22 Sensor Initialization */  
   dht.begin();
   // put your setup code here, to run once:
   M1Serial.begin(115200);
@@ -32,7 +36,7 @@ void setup() {
   /* Board Reset */
   TYPE1SC.reset();
 
-  delay(2000);  
+  delay(2000);
   /* Network Regsistraiton Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");

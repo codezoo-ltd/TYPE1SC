@@ -1,13 +1,12 @@
 #include "TYPE1SC.h"
+#if !defined(__AVR_ATmega4809__)
+#include <avr/dtostrf.h>
+#endif
 
 #define DebugSerial Serial
-#define M1Serial Serial1 // Arduino
+#define M1Serial Serial1
 
-#define PWR_PIN 2
-#define STAT_PIN 3
 #define DHTPIN A0
-
-// AM2302(DHT22) Temperature & Humidity Sensor
 #include "DHT.h" /* https://github.com/markruys/arduino-DHT */
 // Uncomment whatever type you're using!
 //#define DHTTYPE DHT11   // DHT 11
@@ -16,11 +15,13 @@
 
 DHT dht(DHTPIN, DHTTYPE);
 
-TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, STAT_PIN);
+TYPE1SC TYPE1SC(M1Serial, DebugSerial);
 
 void setup() {
-  // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  /* DHT22 Sensor Initialization */
   dht.begin();
   delay(2000);
   // put your setup code here, to run once:
@@ -44,23 +45,10 @@ void setup() {
   }
 
   DebugSerial.println("TYPE1SC Module Ready!!!");
-}
 
-void loop() {
-
-  digitalWrite(LED_BUILTIN,
-               HIGH); // turn the LED on (HIGH is the voltage level)
-#if 0
-  /* Enter a DNS address to get an IP address */
-  char IPAddr[32];
-  if (TYPE1SC.getIPAddr("echo.mbedcloudtesting.com", IPAddr, sizeof(IPAddr)) == 0) {
-    DebugSerial.print("IP Address : ");
-    DebugSerial.println(IPAddr);
-  }
-  delay(1000);
-#endif
-
-  char _IP[] = "a1pff51ysdnjtf-ats.iot.ap-northeast-2.amazonaws.com";
+  /* Device Data EndPoint Address AWS IoT > Settings > Device data endpoint > Copy&Paste */
+  char _IP[] = "*****.amazonaws.com";
+ 
   char _NodeID[] = "Murata_Node01";
   char _Topic[] = "sdkTest/sub";
   char _message[64];
@@ -70,10 +58,6 @@ void loop() {
   float h = 0.0; // Stores humidity value
   char temp[8];
   char humi[8];
-  int cnt = 10;
-
-  /* Get Current Time */
-  //  TYPE1SC.getCCLK(_message, sizeof(_message));
 
   /* 1 : Configure AWS_IOT parameters (ID, Address, tlsProfile) */
   if (TYPE1SC.setAWSIOT_CONN(_NodeID, _IP, tlsProfile) == 0)
@@ -97,29 +81,28 @@ void loop() {
   if (TYPE1SC.AWSIOT_SUBSCRIBE(_Topic) == 0)
     DebugSerial.println("5.Subscribe to the topic on the endpoint");
 
-  /* 6 : Publish data to broker */
-  while (cnt--) {
-    /*Get Temperature & Humidity */
-    while (1) {
-      /* Get DHT22 Sensor */
-      t = dht.readTemperature();
-      h = dht.readHumidity();
-      if (String(t) != "nan" && String(h) != "nan")
-        break;
-      else {
-        DebugSerial.println("case nan ...");
-        delay(1000);
-      }
+  /*Get Temperature & Humidity */
+  while (1) {
+    /* Get DHT22 Sensor */
+    t = dht.readTemperature();
+    h = dht.readHumidity();
+    if (String(t) != "nan" && String(h) != "nan")
+      break;
+    else {
+      DebugSerial.println("case nan ...");
+      delay(1000);
     }
-
-    dtostrf(t, 4, 1, temp);
-    dtostrf(h, 4, 1, humi);
-
-    memset(_message, 0x0, sizeof(_message));
-    sprintf(_message, "Temperature/%s, Humidity/%s", temp, humi);
-    if (TYPE1SC.AWSIOT_Publish(_Topic, _message) == 0)
-      DebugSerial.println("6.Publish data to broker");
   }
+
+  dtostrf(t, 4, 1, temp);
+  dtostrf(h, 4, 1, humi);
+
+  memset(_message, 0x0, sizeof(_message));
+  sprintf(_message, "Temperature/%s, Humidity/%s", temp, humi);
+
+  /* 6 : Publish data to broker */
+  if (TYPE1SC.AWSIOT_Publish(_Topic, _message) == 0)
+    DebugSerial.println("6.Publish data to broker");
 
   /* 7 : UnSubscribe to the topic on the endpoint */
   if (TYPE1SC.AWSIOT_UnSUBSCRIBE(_Topic) == 0) {
@@ -133,11 +116,6 @@ void loop() {
   /* 9 : Disable AWS_IOT events */
   if (TYPE1SC.setAWSIOT_EV(0) == 0)
     DebugSerial.println("9.Disable AWS_IOT events");
-
-  DebugSerial.println("/=========================================/");
-  DebugSerial.println("");
-  digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
-
-  delay(600000);
-  //  delay(20000);
 }
+
+void loop() { delay(1000); }
