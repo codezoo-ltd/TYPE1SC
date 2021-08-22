@@ -32,7 +32,7 @@ void setup() {
   /* Board Reset */
   TYPE1SC.reset();
 
-  delay(2000);  
+  delay(2000);
   /* Network Regsistraiton Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");

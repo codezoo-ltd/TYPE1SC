@@ -20,7 +20,7 @@ TYPE1SC TYPE1SC(M1Serial, DebugSerial);
 void setup() {
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
-  
+
   dht.begin();
   delay(2000);
   // put your setup code here, to run once:
@@ -48,7 +48,8 @@ void setup() {
 
 void loop() {
 
-  digitalWrite(LED_BUILTIN,HIGH); // turn the LED on (HIGH is the voltage level)
+  digitalWrite(LED_BUILTIN,
+               HIGH); // turn the LED on (HIGH is the voltage level)
 
   char _IP[] = "broker.hivemq.com";
   char _NodeID[] = "Cellular_node";

@@ -22,7 +22,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  /* DHT22 Sensor Initialization */  
+  /* DHT22 Sensor Initialization */
   dht.begin();
   // put your setup code here, to run once:
   M1Serial.begin(115200);
@@ -37,7 +37,7 @@ void setup() {
   /* Board Reset */
   TYPE1SC.reset();
 
-  delay(2000);  
+  delay(2000);
   /* Network Regsistraiton Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");

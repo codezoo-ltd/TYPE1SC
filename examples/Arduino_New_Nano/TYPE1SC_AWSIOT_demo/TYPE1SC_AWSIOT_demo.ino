@@ -47,9 +47,11 @@ void setup() {
 
 void loop() {
 
-  digitalWrite(LED_BUILTIN,HIGH); // turn the LED on (HIGH is the voltage level)
+  digitalWrite(LED_BUILTIN,
+               HIGH); // turn the LED on (HIGH is the voltage level)
 
-  /* Device Data EndPoint Address AWS IoT > Settings > Device data endpoint > Copy&Paste */
+  /* Device Data EndPoint Address AWS IoT > Settings > Device data endpoint >
+   * Copy&Paste */
   char _IP[] = "*****.amazonaws.com";
   char _NodeID[] = "Murata_Node01";
   char _Topic[] = "sdkTest/sub";
@@ -60,7 +62,7 @@ void loop() {
   float h = 0.0; // Stores humidity value
   char temp[8];
   char humi[8];
-  int cnt = 10;  /* Data report Count */
+  int cnt = 10; /* Data report Count */
 
   /* 1 : Configure AWS_IOT parameters (ID, Address, tlsProfile) */
   if (TYPE1SC.setAWSIOT_CONN(_NodeID, _IP, tlsProfile) == 0)
@@ -125,5 +127,5 @@ void loop() {
   DebugSerial.println("");
   digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
 
-  delay(600000);  /* 10 Minute */
+  delay(600000); /* 10 Minute */
 }

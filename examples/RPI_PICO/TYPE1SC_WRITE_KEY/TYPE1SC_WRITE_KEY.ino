@@ -13,7 +13,7 @@ TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
-  
+
   // put your setup code here, to run once:
   M1Serial.begin(115200);
   DebugSerial.begin(115200);
