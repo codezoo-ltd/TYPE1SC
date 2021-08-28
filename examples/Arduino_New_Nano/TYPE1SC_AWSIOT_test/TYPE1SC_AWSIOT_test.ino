@@ -46,9 +46,10 @@ void setup() {
 
   DebugSerial.println("TYPE1SC Module Ready!!!");
 
-  /* Device Data EndPoint Address AWS IoT > Settings > Device data endpoint > Copy&Paste */
+  /* Device Data EndPoint Address AWS IoT > Settings > Device data endpoint >
+   * Copy&Paste */
   char _IP[] = "*****.amazonaws.com";
- 
+
   char _NodeID[] = "Murata_Node01";
   char _Topic[] = "sdkTest/sub";
   char _message[64];
