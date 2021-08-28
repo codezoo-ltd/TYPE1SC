@@ -91,7 +91,7 @@ int TYPE1SC::init() {
 
   strcpy(szCmd, "AT%CMATT=1"); // LTE Attach
   ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
-  
+
   return ret;
 }
 
@@ -636,29 +636,31 @@ int TYPE1SC::setAPN(char *apn) {
   TYPE1SC_serial_clearbuf();
 
   /* Setup property */
-  strcpy(szCmd, "AT%NWOPER=\"DEFAULT\""); 
-  if( sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000) )
-      goto APN_FAIL; 
+  strcpy(szCmd, "AT%NWOPER=\"DEFAULT\"");
+  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000))
+    goto APN_FAIL;
 
-  strcpy(szCmd, "AT%SETSYSCFG=\"sw_cfg.3gpp.plmn_roaming\",\"ENABLE\""); 
-  if( sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000) )
-      goto APN_FAIL; 
-  
-  strcpy(szCmd, "AT%SETSYSCFG=\"sw_cfg.nb_vendor_scan_plan.plmn_sel_mode\",\"STANDARD\""); 
-  if( sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000) )
-      goto APN_FAIL;
- 
+  strcpy(szCmd, "AT%SETSYSCFG=\"sw_cfg.3gpp.plmn_roaming\",\"ENABLE\"");
+  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000))
+    goto APN_FAIL;
+
+  strcpy(
+      szCmd,
+      "AT%SETSYSCFG=\"sw_cfg.nb_vendor_scan_plan.plmn_sel_mode\",\"STANDARD\"");
+  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000))
+    goto APN_FAIL;
+
   memset(apnAddr, 0x0, sizeof(apnAddr));
   strcpy(apnAddr, apn);
 
   sprintf(szCmd, "AT+CGDCONT=1,\"IP\",\"%s\"", apnAddr);
 
-  if( sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000) )
-      goto APN_FAIL;
+  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000))
+    goto APN_FAIL;
 
   return 0;
 
-APN_FAIL:  
+APN_FAIL:
   return 1;
 }
 

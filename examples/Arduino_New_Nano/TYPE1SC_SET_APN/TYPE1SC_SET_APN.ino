@@ -30,7 +30,7 @@ void setup() {
   delay(1000);
 
   char *apnAddr = "internet.lte.cxn";
-  //char *apnAddr = "connect.cxn";
+  // char *apnAddr = "connect.cxn";
 
   if (TYPE1SC.setAPN(apnAddr) == 0) {
     DebugSerial.println("TYPE1SC Set APN Address !!!");

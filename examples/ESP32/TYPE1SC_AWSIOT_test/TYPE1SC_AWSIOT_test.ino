@@ -30,7 +30,7 @@ void setup() {
   /* Board Reset */
   TYPE1SC.reset();
   delay(2000);
- 
+
   /* TYPE1SC Module Initialization */
   if (TYPE1SC.init()) {
     DebugSerial.println("TYPE1SC Module Error!!!");
