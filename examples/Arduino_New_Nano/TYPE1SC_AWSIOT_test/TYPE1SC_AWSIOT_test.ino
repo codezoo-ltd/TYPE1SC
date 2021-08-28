@@ -29,15 +29,15 @@ void setup() {
   DebugSerial.begin(115200);
 
   DebugSerial.println("TYPE1SC Module Start!!!");
+  /* Board Reset */
+  TYPE1SC.reset();
+  delay(2000);
+
   /* TYPE1SC Module Initialization */
   if (TYPE1SC.init()) {
     DebugSerial.println("TYPE1SC Module Error!!!");
   }
 
-  /* Board Reset */
-  TYPE1SC.reset();
-
-  delay(2000);
   /* Network Regsistraiton Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");
