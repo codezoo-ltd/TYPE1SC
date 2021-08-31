@@ -632,36 +632,30 @@ int TYPE1SC::setAPN(char *apn) {
   char szCmd[128];
   char apnAddr[64];
   char resBuffer[16];
+  int ret;
 
   TYPE1SC_serial_clearbuf();
 
   /* Setup property */
   strcpy(szCmd, "AT%NWOPER=\"DEFAULT\"");
-  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000))
-    goto APN_FAIL;
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000);
 
   strcpy(szCmd, "AT%SETSYSCFG=\"sw_cfg.3gpp.plmn_roaming\",\"ENABLE\"");
-  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000))
-    goto APN_FAIL;
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000);
 
   strcpy(
       szCmd,
       "AT%SETSYSCFG=\"sw_cfg.nb_vendor_scan_plan.plmn_sel_mode\",\"STANDARD\"");
-  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000))
-    goto APN_FAIL;
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000);
 
   memset(apnAddr, 0x0, sizeof(apnAddr));
   strcpy(apnAddr, apn);
 
   sprintf(szCmd, "AT+CGDCONT=1,\"IP\",\"%s\"", apnAddr);
 
-  if (sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000))
-    goto APN_FAIL;
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
 
-  return 0;
-
-APN_FAIL:
-  return 1;
+  return ret;
 }
 
 int TYPE1SC::getAPN(char *apn, int bufferSize) {
