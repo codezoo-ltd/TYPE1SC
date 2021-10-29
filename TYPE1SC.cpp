@@ -651,7 +651,7 @@ int TYPE1SC::setAPN(char *apn) {
   memset(apnAddr, 0x0, sizeof(apnAddr));
   strcpy(apnAddr, apn);
 
-  sprintf(szCmd, "AT+CGDCONT=1,\"IP\",\"%s\"", apnAddr);
+  sprintf(szCmd, "AT%%APNN=\"%s\"", apnAddr);
 
   ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
 
