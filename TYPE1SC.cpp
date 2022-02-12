@@ -41,8 +41,12 @@ TYPE1SC::TYPE1SC(Stream &serial, Stream &debug, uint8_t pwr_pin,
   pinMode(_wakeup_pin, OUTPUT);
 
   digitalWrite(_pwr_pin, HIGH);
-  digitalWrite(_reset_pin, HIGH);
   digitalWrite(_wakeup_pin, HIGH);
+
+  /* Hard Reset Sequence */
+  digitalWrite(_reset_pin, LOW);
+  delay(100);
+  digitalWrite(_reset_pin, HIGH);
 }
 
 void TYPE1SC::pwrON() {
