@@ -591,10 +591,10 @@ int TYPE1SC::AWSIOT_UnSUBSCRIBE(char *topic) {
 }
 
 int TYPE1SC::AWSIOT_Publish(char *topic, char *Data) {
-  char szCmd[256];
-  char resBuffer[256];
+  char szCmd[512];
+  char resBuffer[512];
   char clientTopic[128];
-  char clientData[256];
+  char clientData[512];
 
   memset(clientTopic, 0x0, sizeof(clientTopic));
   strcpy(clientTopic, topic);
@@ -607,25 +607,10 @@ int TYPE1SC::AWSIOT_Publish(char *topic, char *Data) {
           clientData);
 
   if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"PUBRCV\"",
-                           20000)) {
-    char *pszState = NULL;
-    char *pszState2 = NULL;
-
-    pszState = strstr(resBuffer, ",");
-    if (pszState != NULL) {
-      pszState++;
-      pszState2 = pszState;
-      pszState = strstr(pszState2, ",");
-      if (pszState != NULL) {
-        pszState += 2;
-        // SWIR_TRACE(F("Publish : %s"),pszState);
-        if (strncmp(pszState, clientData, strlen(clientData)) == 0) {
-          SWIR_TRACE(F("Publish success..."));
-          TYPE1SC_serial_clearbuf();
-          return 0;
-        }
-      }
-    }
+			  20000)) {
+	  SWIR_TRACE(F("Publish success..."));
+	  TYPE1SC_serial_clearbuf();
+	  return 0;
   }
   TYPE1SC_serial_clearbuf();
   SWIR_TRACE(F("Publish failed..."));

@@ -29,9 +29,9 @@ void setup() {
 
   delay(1000);
 
-  // char *apnAddr = "internet.lte.cxn";	/* Telenor Connexion APN1 */
-  // char *apnAddr = "internet4gd.gdsp";	/* Vodafone IoTSim APN */
-  char *apnAddr = "connect.cxn";			/* Telenor Connexion APN2 */
+  // char *apnAddr = "simplio.apn";	        /* Vodafone IoTSim APN */
+  // char *apnAddr = "internet.lte.cxn";    /* Telenor Connexion APN1 */
+  char *apnAddr = "connect.cxn";            /* Telenor Connexion APN2 */
 
   if (TYPE1SC.setAPN(apnAddr) == 0) {
     DebugSerial.println("TYPE1SC Set APN Address !!!");
