@@ -169,7 +169,7 @@ public:
   int setPPP(void);
 
   /*
-   * Set PPP mode.
+   * Set AT mode.
    */
   int setAT(void);
 
