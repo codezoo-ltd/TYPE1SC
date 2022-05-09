@@ -1,5 +1,5 @@
-#include <UnixTime.h> //https://github.com/GyverLibs/UnixTime
 #include "TYPE1SC.h"
+#include <UnixTime.h> //https://github.com/GyverLibs/UnixTime
 
 #define DebugSerial Serial
 #define M1Serial Serial1 // RPI_PICO
@@ -17,7 +17,7 @@
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 
 DHT dht(DHTPIN, DHTTYPE);
-UnixTime stamp(9);  // Seoul GMT + 09
+UnixTime stamp(9); // Seoul GMT + 09
 
 TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
 
@@ -107,18 +107,22 @@ void setup() {
   uint32_t _year, _month, _day, _hour, _minute, _second, _tmp;
 
   if (TYPE1SC.getCCLK(szTime, sizeof(szTime)) == 0) {
-    sscanf(szTime, "\"%d/%d/%d,%d:%d:%d+%d\"", &_year, &_month, &_day, &_hour, &_minute, &_second, &_tmp);
+    sscanf(szTime, "\"%d/%d/%d,%d:%d:%d+%d\"", &_year, &_month, &_day, &_hour,
+           &_minute, &_second, &_tmp);
   }
 
-  //Set Date Time
+  // Set Date Time
   _year += 2000;
   stamp.setDateTime(_year, _month, _day, _hour, _minute, _second);
 
-  //Get Unix Time
+  // Get Unix Time
   uint32_t unix = stamp.getUnix();
 
   memset(_message, 0x0, sizeof(_message));
-  sprintf(_message, "{\\\"timeInSeconds\\\":\\\"%lu\\\",\\\"Temperature\\\":\\\"%s\\\",\\\"Humidity\\\":\\\"%s\\\"}", unix, temp, humi);
+  sprintf(_message,
+          "{\\\"timeInSeconds\\\":\\\"%lu\\\",\\\"Temperature\\\":\\\"%s\\\","
+          "\\\"Humidity\\\":\\\"%s\\\"}",
+          unix, temp, humi);
 
   /* 6 : Publish data to broker */
   if (TYPE1SC.AWSIOT_Publish(_Topic, _message) == 0)
