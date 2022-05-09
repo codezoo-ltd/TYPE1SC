@@ -607,10 +607,10 @@ int TYPE1SC::AWSIOT_Publish(char *topic, char *Data) {
           clientData);
 
   if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"PUBRCV\"",
-			  20000)) {
-	  SWIR_TRACE(F("Publish success..."));
-	  TYPE1SC_serial_clearbuf();
-	  return 0;
+                           20000)) {
+    SWIR_TRACE(F("Publish success..."));
+    TYPE1SC_serial_clearbuf();
+    return 0;
   }
   TYPE1SC_serial_clearbuf();
   SWIR_TRACE(F("Publish failed..."));
@@ -678,6 +678,47 @@ int TYPE1SC::getAPN(char *apn, int bufferSize) {
     }
   }
   return 1;
+}
+
+int TYPE1SC::setPPP(void) {
+  char szCmd[128];
+  char resBuffer[128];
+
+  TYPE1SC_serial_clearbuf();
+
+  memset(resBuffer, 0, sizeof(resBuffer));
+  strcpy(szCmd, "ATD*99***1#");
+
+  if (0 ==
+      sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "CONNECT", 20000)) {
+    return 0;
+  }
+
+  SWIR_TRACE(F("Set PPP Mode failed..."));
+  return 1;
+}
+
+int TYPE1SC::setAT(void) {
+  char szCmd[128];
+  char resBuffer[128];
+  int ret, i;
+
+  TYPE1SC_serial_clearbuf();
+
+  memset(szCmd, 0x0, sizeof(szCmd));
+
+  strcpy(szCmd, "+++"); // Set Command Mode
+
+  memset(resBuffer, 0, sizeof(resBuffer));
+
+  for (i = 0; i < 3; i++) {
+    _serial.print(szCmd[i]);
+    delay(100);
+  }
+
+  ret = readATresponseLine(resBuffer, sizeof(resBuffer), "NO CARRIER", 20000);
+
+  return ret;
 }
 
 int TYPE1SC::writeKEY(const char *fileName, int isKEY, const char *key) {

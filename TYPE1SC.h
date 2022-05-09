@@ -164,6 +164,16 @@ public:
   int getAPN(char *apn, int bufferSize);
 
   /*
+   * Set PPP mode.
+   */
+  int setPPP(void);
+
+  /*
+   * Set PPP mode.
+   */
+  int setAT(void);
+
+  /*
    * Write Secure KEY.
    */
   int writeKEY(const char *fileName, int isKEY, const char *key);
