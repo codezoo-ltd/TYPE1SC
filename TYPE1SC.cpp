@@ -22,13 +22,23 @@ extern "C" {
 #define BG_LINE 30 // Limit 30 Line
 //#define __TYPE_1SC_DEBUG		//Debug mode
 
+/* Constructor - Arduino Nano 33 IoT, Nano 33 Ble, Nano RP2040, Nano every */
 TYPE1SC::TYPE1SC(Stream &serial, Stream &debug)
     : _serial(serial), _debug(debug) {
   _timeOut = 2000; /* default Timeout */
   _serial.setTimeout(
       (_timeOut + 500)); /* +500ms, Serial TX/RX Timeout default 2000 */
+
+  /* Modem Hard Reset Sequence */
+  _reset_pin = 2;
+
+  pinMode(_reset_pin, OUTPUT);
+  digitalWrite(_reset_pin, LOW);
+  delay(100);
+  digitalWrite(_reset_pin, HIGH);
 }
 
+/* Constructor - ESP32, Raspberry Pi PICO */
 TYPE1SC::TYPE1SC(Stream &serial, Stream &debug, uint8_t pwr_pin,
                  uint8_t reset_pin, uint8_t wakeup_pin)
     : _serial(serial), _debug(debug), _pwr_pin(pwr_pin), _reset_pin(reset_pin),
