@@ -33,8 +33,6 @@ TYPE1SC::TYPE1SC(Stream &serial, Stream &debug)
   _reset_pin = 2;
 
   pinMode(_reset_pin, OUTPUT);
-  digitalWrite(_reset_pin, LOW);
-  delay(100);
   digitalWrite(_reset_pin, HIGH);
 }
 
@@ -88,6 +86,7 @@ int TYPE1SC::init() {
   memset(resBuffer, 0, sizeof(resBuffer));
   strcpy(szCmd, "AT");
 
+CHK:
   do {
 
     ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
@@ -95,8 +94,19 @@ int TYPE1SC::init() {
     if (ret == 0)
       break;
 
-  } while (cnt < 10);
+  } while ( cnt++ < 20 );
 
+  if(ret){
+	  /* Modem H/W Reset */
+	  digitalWrite(_reset_pin, LOW);
+	  delay(100);
+	  digitalWrite(_reset_pin, HIGH);
+	  delay(1000);
+	  SWIR_TRACE(F("Modem Hardware Reset!!!\n"));
+	  goto CHK;
+  }
+
+  SWIR_TRACE(F("AT -- OK Count : %d\n"),cnt);
   strcpy(szCmd, "ATE0"); // Echo Off
   ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
 
