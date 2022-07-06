@@ -276,6 +276,11 @@ public:
    */
   void reset(void);
 
+  /*
+   * check SIM status.
+   */
+  int chkSIM(void);
+
 private:
   int sendATcmdOmitOK(char *szCmd, char *szResponse, int nResponseBufSize,
                       const char *szResponseFilter,

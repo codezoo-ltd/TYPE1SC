@@ -36,6 +36,12 @@ void setup() {
 
 void loop() {
   /*** TYPE1SC Basic Test Code ***/
+  /* SIM Card Check */
+  if (!TYPE1SC.chkSIM()) {
+    DebugSerial.println("SIM Card OK!!!");
+  }
+  delay(1000);
+
   /* Get Phone Number */
   char szCIMI[16];
   if (TYPE1SC.getCIMI(szCIMI, sizeof(szCIMI)) == 0) {

@@ -1680,3 +1680,22 @@ void TYPE1SC::reset() {
 
   sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
 }
+
+int TYPE1SC::chkSIM() {
+  char szCmd[16];
+  char resBuffer[128];
+  int ret;
+
+  TYPE1SC_serial_clearbuf();
+
+  sprintf(szCmd,"AT%%STATUS=\"USIM\"");
+
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "USIM: ", 5000);
+
+  if(!ret){
+	  ret = strncmp( resBuffer,"REAL USIM",strlen("REAL USIM") );
+  }
+
+  return ret;
+}
+
