@@ -105,15 +105,7 @@ void loop() {
   }
   delay(1000);
 
-  /* Get Serving Cell ID */
-  int cellID;
-  if (TYPE1SC.getServingCell(&cellID) == 0) {
-    DebugSerial.print("Cell ID : ");
-    DebugSerial.println(cellID);
-  }
-  delay(1000);
-
-  /* Get TX Power */
+ /* Get TX Power */
   char txPower[64];
   if (TYPE1SC.getTxPower(txPower, sizeof(txPower)) == 0) {
     DebugSerial.print("TX Power : ");
