@@ -184,6 +184,11 @@ public:
   int addCert(int nProfile);
 
   /*
+   * ADD HTTP Certification Profile. range (1-255)
+   */
+  int addHTTPCert(int nProfile);
+
+  /*
    * DELETE Certification Profile. range (1-255)
    */
   int delCert(int nProfile);

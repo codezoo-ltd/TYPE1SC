@@ -742,7 +742,7 @@ int TYPE1SC::setAT(void) {
 }
 
 int TYPE1SC::writeKEY(const char *fileName, int isKEY, const char *key) {
-  char szCmd[2048 + 64];
+  char szCmd[3072 + 64];	//3KB + 64byte
   char resBuffer[16];
   int ret;
 
@@ -791,6 +791,22 @@ int TYPE1SC::addCert(int nProfile) {
   sprintf(szCmd,
           "AT%%CERTCFG=\"ADD\",%d,\"rootCA.pem\",,\"cert.pem.crt\",\"private."
           "pem.key\"",
+          nProfile);
+
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+  return ret;
+}
+
+int TYPE1SC::addHTTPCert(int nProfile) {
+  char szCmd[256];
+  char resBuffer[16];
+  int ret;
+
+  TYPE1SC_serial_clearbuf();
+
+  sprintf(szCmd,
+          "AT%%CERTCFG=\"ADD\",%d,\"server.crt\",,,",
           nProfile);
 
   ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
