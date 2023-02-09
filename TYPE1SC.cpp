@@ -215,6 +215,244 @@ int TYPE1SC::setCFUN(int value) {
   return ret;
 }
 
+int TYPE1SC::setHTTP_EV(int value) {
+  char szCmd[128];
+  char resBuffer[16];
+  int ret;
+
+  TYPE1SC_serial_clearbuf();
+
+  sprintf(szCmd, "AT%%HTTPEV=\"ALL\",%d", value);
+
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+  return ret;
+}
+
+int TYPE1SC::setHTTP_NODES(int profile_id, char *http_addr) {
+  char szCmd[1024];
+  char resBuffer[16];
+  char httpADDR[512];
+  int  pid;
+  int  ret;
+
+  TYPE1SC_serial_clearbuf();
+
+  if(profile_id > 0 && profile_id < 6){
+	  pid = profile_id;
+  }else{
+	  SWIR_TRACE(F("setHTTP_NODES profile_id error PID: %d \n"), profile_id);
+	  ret = 1;
+	  return ret;
+  }
+
+  memset(httpADDR, 0x0, sizeof(httpADDR));
+  strcpy(httpADDR, http_addr);
+
+  sprintf(szCmd, "AT%%HTTPCFG=\"NODES\",%d,\"%s\"", pid, httpADDR);
+
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+  return ret;
+}
+
+int TYPE1SC::setHTTP_TLS(int profile_id, int nProfile) {
+  char szCmd[512];
+  char resBuffer[16];
+  int  pid;
+  int  nid;
+  int  ret;
+
+  TYPE1SC_serial_clearbuf();
+
+  if(profile_id > 0 && profile_id < 6){
+	  pid = profile_id;
+  }else{
+	  SWIR_TRACE(F("setHTTP_NODES profile_id error PID: %d \n"), profile_id);
+	  ret = 1;
+	  return ret;
+  }
+
+  if(nProfile > 0 && nProfile < 256){
+	  nid = nProfile;
+  }else{
+	  SWIR_TRACE(F("setHTTP_TLS nProfile error NID: %d \n"), nProfile);
+	  ret = 1;
+	  return ret;
+  }
+
+  sprintf(szCmd, "AT%%HTTPCFG=\"TLS\",%d,2,%d", pid, nid);
+
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+  return ret;
+}
+
+int TYPE1SC::HTTP_GET(int profile_id, char *http_get_addr, int *readSize) {
+  char szCmd[1024];
+  char resBuffer[128];
+  char httpADDR[512];
+  int  pid;
+  int  rSize1, rSize2;
+
+  TYPE1SC_serial_clearbuf();
+
+  *readSize = 0;
+
+  if(profile_id > 0 && profile_id < 6){
+	  pid = profile_id;
+  }else{
+	  SWIR_TRACE(F("setHTTP_NODES profile_id error PID: %d \n"), profile_id);
+	  return 1;
+  }
+
+  memset(httpADDR, 0x0, sizeof(httpADDR));
+  strcpy(httpADDR, http_get_addr);
+
+  sprintf(szCmd, "AT%%HTTPCMD=\"GET\",%d,\"%s\"", pid, httpADDR);
+
+  if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"GETRCV\",",
+                           20000)) {
+    char *pszState = NULL;
+    char *pszState2 = NULL;
+
+    pszState = strstr(resBuffer, ",");
+    if (pszState != NULL) {
+      pszState++;
+      pszState2 = pszState;
+      pszState = strstr(pszState2, ",");
+      if (pszState != NULL) {
+        pszState++;
+		pszState2 = pszState;
+		rSize1 = atoi(pszState);
+		pszState = strstr(pszState2, ",");
+		if (pszState != NULL) {
+			pszState++;
+			rSize2 = atoi(pszState);
+			SWIR_TRACE(F("HTTP Read Size %d, %d \n"),rSize1, rSize2);
+			*readSize = rSize1 + rSize2;
+
+			return 0;
+        }
+      }
+    }
+  }
+
+  SWIR_TRACE(F("HTTP GET Response Error..."));
+  return 1;
+}
+
+int TYPE1SC::HTTP_GET(int profile_id, char *http_get_addr, int *readSize, bool secure){
+  char szCmd[1024];
+  char resBuffer[128];
+  char httpADDR[512];
+  int  pid;
+  int  rSize1;
+
+  TYPE1SC_serial_clearbuf();
+
+  *readSize = 0;
+
+  if(profile_id > 0 && profile_id < 6 && secure == false){
+	  pid = profile_id;
+  }else{
+	  SWIR_TRACE(F("setHTTP_NODES profile_id error PID: %d \n"), profile_id);
+	  return 1;
+  }
+
+  memset(httpADDR, 0x0, sizeof(httpADDR));
+  strcpy(httpADDR, http_get_addr);
+
+  sprintf(szCmd, "AT%%HTTPCMD=\"GET\",%d,\"%s\"", pid, httpADDR);
+
+  if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "\"GETRCV\",",
+                           20000)) {
+    char *pszState = NULL;
+    char *pszState2 = NULL;
+
+    pszState = strstr(resBuffer, ",");
+    if (pszState != NULL) {
+      pszState++;
+      pszState2 = pszState;
+      pszState = strstr(pszState2, ",");
+      if (pszState != NULL) {
+		  pszState++;
+		  pszState2 = pszState;
+		  rSize1 = atoi(pszState);
+		  *readSize = rSize1;
+
+		  return 0;
+	  }
+    }
+  }
+
+  SWIR_TRACE(F("HTTP GET Response Error..."));
+  return 1;
+
+}
+
+int TYPE1SC::HTTP_READ(int profile_id, int readSize, char* httpData, int nBufferSize) {
+  char szCmd[64];
+  char resBuffer[1024];
+  int  pid, rSize1, rSize2;
+
+  if(profile_id > 0 && profile_id < 6){
+	  pid = profile_id;
+  }else{
+	  SWIR_TRACE(F("HTTP_READ profile_id error PID: %d \n"), profile_id);
+	  return 1;
+  }
+  memset(httpData, 0x0, nBufferSize);
+
+  TYPE1SC_serial_clearbuf();
+
+  sprintf(szCmd, "AT%%HTTPREAD=%d,%d", pid, readSize);
+
+  if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "HTTPREAD:", 20000))
+  {
+	  char *pszState = NULL;
+	  char *pszState2 = NULL;
+	  int httpReadSize;
+
+	  pszState = resBuffer;
+	  rSize1 = atoi(pszState);
+	  pszState++;
+	  pszState2 = pszState;
+
+	  pszState = strstr(pszState2, ",");
+	  if (pszState != NULL) {
+		  pszState++;
+		  rSize2 = atoi(pszState);
+		  SWIR_TRACE(F("HTTP Read Size [%d], [%d] \n"),rSize1, rSize2);
+		  httpReadSize = rSize1;
+
+		  memset(httpData, 0x0, nBufferSize);
+		  pszState = httpData;
+
+		  unsigned long end_ms = millis() + 10000;
+
+		  do {
+			  if (_serial.available()) {
+				  String sStr;
+				  sStr = _serial.readStringUntil('\n');
+				  int nLen = sStr.length();
+
+				  if (nLen > 1) {
+					  sStr.toCharArray(pszState, nLen);
+					  pszState+=nLen;
+					  *pszState='\n';
+					  pszState++;
+				  }
+				  httpReadSize -= nLen;
+			  }
+		  } while (end_ms>millis() && httpReadSize>0 );
+
+		  return 0;
+	  }
+  }
+  return 1;
+}
+
 int TYPE1SC::setMQTT_EV(int value) {
   char szCmd[128];
   char resBuffer[16];

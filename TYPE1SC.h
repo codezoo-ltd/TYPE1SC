@@ -68,6 +68,36 @@ public:
   int setCFUN(int value);
 
   /*
+   * Set Change HTTP Event functionality. (0-1)
+   */
+  int setHTTP_EV(int value);
+
+  /*
+   * Set HTTP Profile ID & Connection Address.
+   */
+  int setHTTP_NODES(int profile_id, char *http_addr);
+
+  /*
+   * Set HTTP TLS.
+   */
+  int setHTTP_TLS(int profile_id, int nProfile);
+
+  /*
+   * HTTP Get.
+   */
+  int HTTP_GET(int profile_id, char *http_get_addr, int *readSize);
+
+  /*
+   * HTTP Get.
+   */
+  int HTTP_GET(int profile_id, char *http_get_addr, int *readSize, bool secure);
+
+  /*
+   * HTTP Data Read.
+   */
+  int HTTP_READ(int profile_id, int readSize, char* httpData, int nBufferSize);
+
+  /*
    * Set Change MQTT Event functionality. (0-1)
    */
   int setMQTT_EV(int value);
