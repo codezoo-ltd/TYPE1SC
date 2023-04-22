@@ -58,6 +58,11 @@ public:
   int getIMEI(char *szIMEI, int nBufferSize);
 
   /*
+   * Request ICCID from the SIM (returns the ICCID).
+   */
+  int getICCID(char *szICCID, int nBufferSize);
+
+  /*
    * Request Change device functionality status. (0-1)
    */
   int getCFUN(int *value);
@@ -342,6 +347,9 @@ private:
   int readATresponseLine(char *szLine, int nLineBufSize,
                          const char *szResponseFilter, unsigned long ulDelay);
 
+  int readATresponseHTTPLine(char *szLine, int nLineBufSize,
+                         const char *szResponseFilter, unsigned long ulDelay);
+ 
   int readATresponseLine(char *aLine[], int nMaxLine, unsigned long ulDelay);
 
   void TYPE1SC_serial_clearbuf(void);

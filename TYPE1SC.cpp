@@ -76,7 +76,7 @@ void TYPE1SC::extAntON(uint8_t extAnt_pin) {
 }
 
 int TYPE1SC::init() {
-  char szCmd[16];
+  char szCmd[128];
   char resBuffer[16];
   int cnt = 0;
   int ret;
@@ -394,7 +394,9 @@ int TYPE1SC::HTTP_GET(int profile_id, char *http_get_addr, int *readSize, bool s
 int TYPE1SC::HTTP_READ(int profile_id, int readSize, char* httpData, int nBufferSize) {
   char szCmd[64];
   char resBuffer[1024];
-  int  pid, rSize1, rSize2;
+  int  pid, rSize1, rSize2, ret;
+
+  TYPE1SC_serial_clearbuf();
 
   if(profile_id > 0 && profile_id < 6){
 	  pid = profile_id;
@@ -404,15 +406,17 @@ int TYPE1SC::HTTP_READ(int profile_id, int readSize, char* httpData, int nBuffer
   }
   memset(httpData, 0x0, nBufferSize);
 
-  TYPE1SC_serial_clearbuf();
 
   sprintf(szCmd, "AT%%HTTPREAD=%d,%d", pid, readSize);
-
-  if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "HTTPREAD:", 20000))
+  _serial.println(szCmd);
+  ret = readATresponseHTTPLine(httpData, nBufferSize, "https://httpbin.org/get", 20000);
+#if 0
+  if (0 == sendATcmdOmitOK(szCmd, resBuffer, sizeof(resBuffer), "HTTPREAD:", 25000))
   {
 	  char *pszState = NULL;
 	  char *pszState2 = NULL;
 	  int httpReadSize;
+	  int addr=0;
 
 	  pszState = resBuffer;
 	  rSize1 = atoi(pszState);
@@ -424,13 +428,18 @@ int TYPE1SC::HTTP_READ(int profile_id, int readSize, char* httpData, int nBuffer
 		  pszState++;
 		  rSize2 = atoi(pszState);
 		  SWIR_TRACE(F("HTTP Read Size [%d], [%d] \n"),rSize1, rSize2);
-		  httpReadSize = rSize1;
+		  httpReadSize = rSize1+rSize2;
+//		  httpReadSize = readSize;
 
+		  SWIR_TRACE(F("httpReadSize Start: [%d]\n"),httpReadSize);
 		  memset(httpData, 0x0, nBufferSize);
 		  pszState = httpData;
 
-		  unsigned long end_ms = millis() + 10000;
+		  char endMSG[] = {0x7D, 0xA, 0xD, 0xA, 0x4F, 0x4B, 0xD, 0xA};
 
+
+		  unsigned long end_ms = millis() + 25000;
+//#if 0
 		  do {
 			  if (_serial.available()) {
 				  String sStr;
@@ -440,17 +449,37 @@ int TYPE1SC::HTTP_READ(int profile_id, int readSize, char* httpData, int nBuffer
 				  if (nLen > 1) {
 					  sStr.toCharArray(pszState, nLen);
 					  pszState+=nLen;
-					  *pszState='\n';
+					 *pszState='\n';
 					  pszState++;
 				  }
 				  httpReadSize -= nLen;
 			  }
 		  } while (end_ms>millis() && httpReadSize>0 );
+		  do {
+			  if (_serial.available()) {
+				  char c;
+				  c = _serial.read();
+				  *(pszState+addr) = c;
+				  addr++;
+				  httpReadSize--;
 
-		  return 0;
-	  }
-  }
-  return 1;
+				  if(addr>8){
+					  if(0 == strncmp(endMSG, (pszState+addr-8), 85)){
+						  SWIR_TRACE(F("check last pattern!!!, [%d]"),addr);
+						  break;
+					  }
+				  }
+			  }
+		  } while (end_ms>millis());
+
+  TYPE1SC_serial_clearbuf();
+		  SWIR_TRACE(F("httpReadSize End: [%d]\n"),httpReadSize);
+#endif
+//		  return 0;
+//	  }
+//  }
+//  return 1;
+		  return ret;
 }
 
 int TYPE1SC::setMQTT_EV(int value) {
@@ -1044,11 +1073,13 @@ int TYPE1SC::addHTTPCert(int nProfile) {
   TYPE1SC_serial_clearbuf();
 
   sprintf(szCmd,
-          "AT%%CERTCFG=\"ADD\",%d,\"server.crt\",,,",
+          "AT%%CERTCFG=\"ADD\",%d,\"kicassl.pem\",\".\"",
           nProfile);
 
-  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
-
+/*
+  strcpy(szCmd, "AT%CERTCMD=\"DIR\",\"~\"");
+  ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "user", 3000);
+*/
   return ret;
 }
 
@@ -1166,6 +1197,22 @@ int TYPE1SC::getIMEI(char *szIMEI, int nBufferSize) {
   }
 
   return (strlen(szIMEI) > 0 ? 0 : 1);
+}
+
+int TYPE1SC::getICCID(char *szICCID, int nBufferSize) {
+	char szCmd[64];
+	char resBuffer[128];
+
+	TYPE1SC_serial_clearbuf();
+
+	memset(szICCID, 0x0, nBufferSize);
+	strcpy(szCmd, "AT%CCID");
+
+	if (0 == sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "%CCID: ")) {
+		strcpy(szICCID, resBuffer);
+		return 0;
+	}
+	return 1;
 }
 
 int TYPE1SC::canConnect() {
@@ -1750,6 +1797,93 @@ int TYPE1SC::readATresponseLineOmitOK(char *szLine, int nLineBufSize,
   int i;
   for (i = 0; i < nbLine; i++) {
     SWIR_TRACE(F("line[%d]: %s\n"), i, aLine[i]);
+    free(aLine[i]);
+  }
+
+  return nRet;
+}
+
+int TYPE1SC::readATresponseHTTPLine(char *szLine, int nLineBufSize,
+                                const char *szResponseFilter,
+                                unsigned long ulDelay) {
+  int nbLine = 0;
+  char *aLine[BG_LINE];
+  Countdown oCountdown(ulDelay);
+  char *pszSubstr = NULL;
+
+  memset(szLine, 0, nLineBufSize);
+
+  do {
+	  if (_serial.available()) {
+		  String sStr;
+		  sStr = _serial.readStringUntil('\n');
+		  int nLen = sStr.length();
+
+		  if (nLen > 1) {
+			  aLine[nbLine] = (char *)malloc(nLen + 1);
+			  sStr.toCharArray(aLine[nbLine], nLen);
+			  aLine[nbLine][nLen] = 0;
+
+			  pszSubstr = strstr(aLine[nbLine], "https://httpbin.org/get");
+			  if (pszSubstr != NULL) {
+				  nbLine++;
+				  SWIR_TRACE(F("Found url OK"));
+				  break;
+			  }
+
+			  nbLine++;
+      }
+    }
+    if (nbLine >= BG_LINE) {
+      break;
+    }
+  } while (!oCountdown.expired());
+
+  SWIR_TRACE(F("readATresponseLine: %d line(s)\n"), nbLine);
+
+  int i;
+
+  int nRet = 3;
+
+  for (i = 0; i < nbLine; i++) {
+    SWIR_TRACE(F("line[%d]: %s\n"), i, aLine[i]);
+
+    if (szResponseFilter == NULL) {
+      // Not filtering response
+      strcpy(szLine, aLine[i]);
+      nRet = 0;
+    } else if (strlen(szResponseFilter) > 0) {
+      // Filtering Response
+      char *pszSubstr = NULL;
+
+      pszSubstr = strstr(aLine[i], szResponseFilter);
+      if (pszSubstr != NULL) {
+        pszSubstr += strlen(szResponseFilter);
+        while (isSpace(*pszSubstr)) // trim heading
+        {
+          pszSubstr++;
+        }
+        char *pTemp = pszSubstr;
+        while (pTemp < (aLine[i] + strlen(aLine[i]))) // trim ending
+        {
+          if (*pTemp == '\n') // remove cariage return
+          {
+            *pTemp = 0; // zero terminate string
+            break;
+          }
+          pTemp++;
+        }
+
+        SWIR_TRACE(F("Go Go Go Filtered response: %s\n"), pszSubstr);
+        strcpy(szLine, pszSubstr);
+        nRet = 0;
+      }
+    } else {
+      // Not filtering response
+      strcpy(szLine, aLine[i]);
+      nRet = 0;
+    }
+
     free(aLine[i]);
   }
 
