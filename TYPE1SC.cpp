@@ -1009,7 +1009,7 @@ int TYPE1SC::setAT(void) {
 }
 
 int TYPE1SC::writeKEY(const char *fileName, int isKEY, const char *key) {
-  char szCmd[3072 + 64];	//3KB + 64byte
+  char szCmd[2048];
   char resBuffer[16];
   int ret;
 
