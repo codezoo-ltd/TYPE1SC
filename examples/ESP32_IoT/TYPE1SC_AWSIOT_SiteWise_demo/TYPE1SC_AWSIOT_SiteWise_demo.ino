@@ -10,7 +10,7 @@
 #define WAKEUP_PIN 19
 #define EXT_ANT 4
 
-#define DHTPIN 26
+#define DHTPIN 0
 
 // AM2302(DHT22) Temperature & Humidity Sensor
 #include "DHT.h" /* https://github.com/markruys/arduino-DHT */
