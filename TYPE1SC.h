@@ -117,6 +117,11 @@ class TYPE1SC {
 		 */
 		int setMQTT_NODES(char *client_id, char *mqtt_addr, char *mqtt_user, char *mqtt_pass);
 
+		/*  
+		 * Set MQTT Client ID & Connection Address & User ID & Password
+		 */
+		int setMQTT_NODES(char *client_id, char *mqtt_addr, char *mqtt_user);
+
 		/*
 		 * Set MQTT Session Timeout. (1 - 65535, Default 600 sec)
 		 */

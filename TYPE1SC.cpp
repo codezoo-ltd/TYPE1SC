@@ -549,6 +549,32 @@ int TYPE1SC::setMQTT_NODES(char *client_id, char *mqtt_addr, char *mqtt_user, ch
 	return ret;
 }
 
+int TYPE1SC::setMQTT_NODES(char *client_id, char *mqtt_addr, char *mqtt_user) {
+	char szCmd[512];
+	char resBuffer[16];
+	char clientID[128];
+	char mqttADDR[256];
+	char clientName[128];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	memset(clientID, 0x0, sizeof(clientID));
+	strcpy(clientID, client_id);
+
+	memset(mqttADDR, 0x0, sizeof(mqttADDR));
+	strcpy(mqttADDR, mqtt_addr);
+
+	memset(clientName, 0x0, sizeof(clientName));
+	strcpy(clientName, mqtt_user);
+
+	sprintf(szCmd, "AT%%MQTTCFG=\"NODES\",1,\"%s\",\"%s\",\"%s\"", clientID, mqttADDR, clientName);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;
+}
+
 int TYPE1SC::setMQTT_TIMEOUT(uint32_t value) {
 	char szCmd[128];
 	char resBuffer[16];
