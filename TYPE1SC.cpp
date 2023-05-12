@@ -20,7 +20,7 @@ extern "C" {
 #define SWIR_TRACE(...) TYPE1SC_trace(__VA_ARGS__);
 #define TRACE_BUFFER_SIZE 256
 #define BG_LINE 30 // Limit 30 Line
-//#define __TYPE_1SC_DEBUG		//Debug mode
+#define __TYPE_1SC_DEBUG		//Debug mode
 
 /* Constructor - Arduino Nano 33 IoT, Nano 33 Ble, Nano RP2040, Nano every */
 TYPE1SC::TYPE1SC(Stream &serial, Stream &debug)
@@ -1293,6 +1293,26 @@ int TYPE1SC::canConnect() {
 	}
 
 	SWIR_TRACE(F("Not ready to make data call..."));
+	return 1;
+}
+
+int TYPE1SC::getRejectCause(int *rejectNum) {
+	char szATcmd[16];
+	char resBuffer[128];
+	int  number;
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szATcmd, "AT%%CEER?");
+	if (0 == sendATcmd(szATcmd, resBuffer, sizeof(resBuffer), "\"REJECT\",#", 5000)) {
+		number = atoi(resBuffer);
+
+		SWIR_TRACE(F("Rejct Number %d \r\n"), number);
+		*rejectNum = number;
+		return 0;
+	}
+
+	SWIR_TRACE(F("get Reject Number Fail..."));
 	return 1;
 }
 

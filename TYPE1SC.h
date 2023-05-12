@@ -249,7 +249,12 @@ class TYPE1SC {
 		int canConnect(void);
 
 		/*
-		 * Get serving cellID information.
+		 * Get REJECT Cause Number.
+		 */
+		int getRejectCause(int *rejectNum);
+
+		/*
+		 * Get Serving Cell Number.
 		 */
 		int getServingCell(int *servingCell);
 
