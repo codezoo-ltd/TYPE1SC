@@ -106,7 +106,7 @@ void loop() {
   }
   delay(1000);
 
- /* Get TX Power */
+  /* Get TX Power */
   char txPower[64];
   if (TYPE1SC.getTxPower(txPower, sizeof(txPower)) == 0) {
     DebugSerial.print("TX Power : ");

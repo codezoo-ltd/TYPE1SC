@@ -10,7 +10,7 @@
 #define WAKEUP_PIN 19
 #define EXT_ANT 4
 
-U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);
+U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* reset=*/U8X8_PIN_NONE);
 TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
 
 #define U8LOG_WIDTH 16
@@ -23,76 +23,76 @@ U8X8LOG u8x8log;
  */
 #define EXT_ANT_ON 0
 
-void extAntenna(){
-	if (EXT_ANT_ON)
-	{
-		pinMode(EXT_ANT, OUTPUT);
-		digitalWrite(EXT_ANT, HIGH);
-		delay(100);
-	}
+void extAntenna() {
+  if (EXT_ANT_ON) {
+    pinMode(EXT_ANT, OUTPUT);
+    digitalWrite(EXT_ANT, HIGH);
+    delay(100);
+  }
 }
 
 void setup() {
-	u8x8.begin();
-	u8x8.setFont(u8x8_font_chroma48medium8_r);
+  u8x8.begin();
+  u8x8.setFont(u8x8_font_chroma48medium8_r);
 
-	u8x8log.begin(u8x8, U8LOG_WIDTH, U8LOG_HEIGHT, u8log_buffer);
-	u8x8log.setRedrawMode(1);    // 0: Update screen with newline, 1: Update screen for every char
+  u8x8log.begin(u8x8, U8LOG_WIDTH, U8LOG_HEIGHT, u8log_buffer);
+  u8x8log.setRedrawMode(
+      1); // 0: Update screen with newline, 1: Update screen for every char
 
-	// put your setup code here, to run once:
-	M1Serial.begin(115200);
-	DebugSerial.begin(115200);
+  // put your setup code here, to run once:
+  M1Serial.begin(115200);
+  DebugSerial.begin(115200);
 
-	DebugSerial.println("TYPE1SC Module Start!!!");
-	u8x8log.print("TYPE1SC Module Start!!!\n");
+  DebugSerial.println("TYPE1SC Module Start!!!");
+  u8x8log.print("TYPE1SC Module Start!!!\n");
 
-	extAntenna();
+  extAntenna();
 
-	/* TYPE1SC Module Initialization */
-	if (TYPE1SC.init()) {
-		DebugSerial.println("TYPE1SC Module Error!!!");
-		u8x8log.print("TYPE1SC Module Error!!!\n");
-	}
+  /* TYPE1SC Module Initialization */
+  if (TYPE1SC.init()) {
+    DebugSerial.println("TYPE1SC Module Error!!!");
+    u8x8log.print("TYPE1SC Module Error!!!\n");
+  }
 
-	/* Network Disable */
-	if (TYPE1SC.setCFUN(0) == 0) {
-		DebugSerial.println("TYPE1SC Network Disable!!!");
-		u8x8log.print("TYPE1SC Network Disable!!!\n");
-	}
+  /* Network Disable */
+  if (TYPE1SC.setCFUN(0) == 0) {
+    DebugSerial.println("TYPE1SC Network Disable!!!");
+    u8x8log.print("TYPE1SC Network Disable!!!\n");
+  }
 
-	delay(1000);
+  delay(1000);
 
-	char *apnAddr = "simplio.apn";	        /* Vodafone Global IoT SIM APN */
+  char *apnAddr = "simplio.apn"; /* Vodafone Global IoT SIM APN */
 
-	if (TYPE1SC.setAPN(apnAddr) == 0) {
-		DebugSerial.println("TYPE1SC Set APN Address!!!");
-		u8x8log.print("TYPE1SC Set APN Address!!!\n");
-	}
+  if (TYPE1SC.setAPN(apnAddr) == 0) {
+    DebugSerial.println("TYPE1SC Set APN Address!!!");
+    u8x8log.print("TYPE1SC Set APN Address!!!\n");
+  }
 
-	/* Board Reset */
-	TYPE1SC.reset();
-	delay(2000);
+  /* Board Reset */
+  TYPE1SC.reset();
+  delay(2000);
 
-	/* TYPE1SC Module Initialization */
-	if (TYPE1SC.init()) {
-		DebugSerial.println("TYPE1SC Module Error!!!");
-		u8x8log.print("TYPE1SC Module Error!!!\n");
-	}
+  /* TYPE1SC Module Initialization */
+  if (TYPE1SC.init()) {
+    DebugSerial.println("TYPE1SC Module Error!!!");
+    u8x8log.print("TYPE1SC Module Error!!!\n");
+  }
 
-	DebugSerial.println("TYPE1SC Module Ready!!!");
-	u8x8log.print("TYPE1SC Module Ready!!\n");
+  DebugSerial.println("TYPE1SC Module Ready!!!");
+  u8x8log.print("TYPE1SC Module Ready!!\n");
 
-	char apn[128];
-	if (TYPE1SC.getAPN(apn, sizeof(apn)) == 0) {
-		DebugSerial.print("GET APN Address: ");
-		DebugSerial.println(apn);
-		u8x8log.print("GET APN Address: ");
-		u8x8log.print(apn);
-		u8x8log.print("\n");
-	}
+  char apn[128];
+  if (TYPE1SC.getAPN(apn, sizeof(apn)) == 0) {
+    DebugSerial.print("GET APN Address: ");
+    DebugSerial.println(apn);
+    u8x8log.print("GET APN Address: ");
+    u8x8log.print(apn);
+    u8x8log.print("\n");
+  }
 
-	DebugSerial.println("TYPE1SC APN Setup Complete!!!");
-	u8x8log.print("TYPE1SC APN Setup Complete!!!\n");
+  DebugSerial.println("TYPE1SC APN Setup Complete!!!");
+  u8x8log.print("TYPE1SC APN Setup Complete!!!\n");
 }
 
 void loop() { delay(1000); }

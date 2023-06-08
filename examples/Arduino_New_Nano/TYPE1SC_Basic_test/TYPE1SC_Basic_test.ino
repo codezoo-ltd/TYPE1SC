@@ -15,6 +15,7 @@ void setup() {
   DebugSerial.println("TYPE1SC Module Start!!!");
   /* Board Reset */
   TYPE1SC.reset();
+  delay(2000);
 
   /* TYPE1SC Module Initialization */
   if (TYPE1SC.init()) {
@@ -101,7 +102,7 @@ void loop() {
   }
   delay(1000);
 
- /* Get TX Power */
+  /* Get TX Power */
   char txPower[64];
   if (TYPE1SC.getTxPower(txPower, sizeof(txPower)) == 0) {
     DebugSerial.print("TX Power : ");

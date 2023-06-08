@@ -15,6 +15,7 @@ void setup() {
   DebugSerial.println("TYPE1SC Module Start!!!");
   /* Board Reset */
   TYPE1SC.reset();
+  delay(2000);
 
   /* TYPE1SC Module Initialization */
   if (TYPE1SC.init()) {
@@ -28,16 +29,14 @@ void setup() {
 
   delay(1000);
 
-  char *apnAddr = "simplio.apn";	        /* Vodafone Global IoT SIM APN */
-  // char *apnAddr = "internet.lte.cxn";    /* Telenor Connexion APN1 */
-  // char *apnAddr = "connect.cxn";			/* Telenor Connexion APN2 */
+  char *apnAddr = "simplio.apn"; /* Vodafone Global IoT SIM APN */
 
   if (TYPE1SC.setAPN(apnAddr) == 0) {
     DebugSerial.println("TYPE1SC Set APN Address !!!");
   }
-
   /* Board Reset */
   TYPE1SC.reset();
+  delay(2000);
 
   /* TYPE1SC Module Initialization */
   if (TYPE1SC.init()) {
