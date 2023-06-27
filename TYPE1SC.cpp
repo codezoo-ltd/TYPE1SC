@@ -215,6 +215,20 @@ int TYPE1SC::setCFUN(int value) {
 	return ret;
 }
 
+int TYPE1SC::setSocket_EV(int value) {
+	char szCmd[128];
+	char resBuffer[16];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	sprintf(szCmd, "AT%%SOCKETEV=0,%d", value);
+
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
+	return ret;
+}
+
 int TYPE1SC::setHTTP_EV(int value) {
 	char szCmd[128];
 	char resBuffer[16];
@@ -1686,6 +1700,62 @@ int TYPE1SC::socketRecv(char *buffer, int bufferSize, int *recvSize) {
 		}
 	}
 
+	return ret;
+}
+
+int TYPE1SC::socketRecvHTTP(char *buffer, int bufferSize, int *recvSize) {
+	char szCmd[32];
+	char resBuffer[1600]; /* Max 800 byte Receive */
+	int RecvSize, ret;
+	char *pszState = NULL;
+	char *pszState2 = NULL;
+
+	_serial.setTimeout(20000);
+
+	memset(resBuffer, 0, sizeof(resBuffer));
+
+	if(!readATresponseLine(resBuffer, sizeof(resBuffer), "SOCKETEV:1,1", 20000)){
+		memset(resBuffer, 0, sizeof(resBuffer));
+
+		sprintf(szCmd, "AT%%SOCKETDATA=\"RECEIVE\",%d,1000", _nSocket);
+		ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "SOCKETDATA:", 20000);
+
+		if (!ret) {
+			SWIR_TRACE(F("Recv %s\n"), resBuffer);
+
+			pszState = strstr(resBuffer, ",");
+			if (pszState != NULL)
+				pszState++;
+
+			RecvSize = atoi(pszState);
+			SWIR_TRACE(F("RecvSize [%d]\n"), RecvSize);
+
+			*recvSize = RecvSize;
+
+			pszState2 = pszState;
+
+			for (int i = 0; i < 2; i++) {
+				pszState = strstr(pszState2, ",");
+				if (pszState != NULL) {
+					pszState++;
+					pszState2 = pszState;
+				}
+			}
+
+			pszState++;
+			pszState2 = pszState;
+			pszState = strstr(pszState2, "\"");
+
+			if (pszState != NULL) {
+
+				memset(buffer, 0, bufferSize);
+
+				for (size_t i = 0; i < RecvSize * 2; i += 2) {
+					buffer[i / 2] = HEX_PAIR_TO_BYTE(pszState2[i], pszState2[i + 1]);
+				}
+			}
+		}
+	}
 	return ret;
 }
 

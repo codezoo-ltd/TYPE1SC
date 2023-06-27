@@ -75,6 +75,11 @@ class TYPE1SC {
 		/*
 		 * Set Change HTTP Event functionality. (0-1)
 		 */
+		int setSocket_EV(int value);
+
+		/*
+		 * Set Change HTTP Event functionality. (0-1)
+		 */
 		int setHTTP_EV(int value);
 
 		/*
@@ -320,6 +325,11 @@ class TYPE1SC {
 		 * Receive UDP/TCP Socket.
 		 */
 		int socketRecv(char *buffer, int bufferSize, int *recvSize);
+
+		/*
+		 * Receive HTTP Socket.
+		 */
+		int socketRecvHTTP(char *buffer, int bufferSize, int *recvSize);
 
 		/*
 		 * Power Saving Mode Disable function. TYPE1SC Default, 0(Disable)
