@@ -1714,7 +1714,7 @@ int TYPE1SC::socketRecvHTTP(char *buffer, int bufferSize, int *recvSize) {
 
 	memset(resBuffer, 0, sizeof(resBuffer));
 
-	if(!readATresponseLine(resBuffer, sizeof(resBuffer), "SOCKETEV:1,1", 60000)){
+	if(!readATresponseLineOmitOK(resBuffer, sizeof(resBuffer), "SOCKETEV:1,1", 60000)){
 		memset(resBuffer, 0, sizeof(resBuffer));
 
 		sprintf(szCmd, "AT%%SOCKETDATA=\"RECEIVE\",%d,1000", _nSocket);
