@@ -1650,7 +1650,7 @@ int TYPE1SC::socketSend(const char *str) {
 	((HEX_CHAR_TO_NIBBLE(h) << 4) + HEX_CHAR_TO_NIBBLE(l))
 int TYPE1SC::socketRecv(char *buffer, int bufferSize, int *recvSize) {
 	char szCmd[32];
-	char resBuffer[1600]; /* Max 800 byte Receive */
+	char resBuffer[2048]; /* Max 1024 byte Receive */
 	int RecvSize, ret;
 	char *pszState = NULL;
 	char *pszState2 = NULL;
@@ -1705,7 +1705,7 @@ int TYPE1SC::socketRecv(char *buffer, int bufferSize, int *recvSize) {
 
 int TYPE1SC::socketRecvHTTP(char *buffer, int bufferSize, int *recvSize) {
 	char szCmd[32];
-	char resBuffer[1600]; /* Max 800 byte Receive */
+	char resBuffer[2048]; /* Max 1024 byte Receive */
 	int RecvSize, ret;
 	char *pszState = NULL;
 	char *pszState2 = NULL;
