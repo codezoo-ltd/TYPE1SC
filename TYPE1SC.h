@@ -307,6 +307,9 @@ class TYPE1SC {
 		/* Socket DeActivation */
 		int socketDeActivate(void);
 
+		/* Socket SSL */
+		int socketSSL(int tlsProfileNo);
+
 		/* Socket Information */
 		int socketInfo(char *info, int infoSize);
 

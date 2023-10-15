@@ -20,7 +20,7 @@ extern "C" {
 #define SWIR_TRACE(...) TYPE1SC_trace(__VA_ARGS__);
 #define TRACE_BUFFER_SIZE 256
 #define BG_LINE 30 // Limit 30 Line
-//#define __TYPE_1SC_DEBUG		//Debug mode
+				   //#define __TYPE_1SC_DEBUG		//Debug mode
 
 /* Constructor - Arduino Nano 33 IoT, Nano 33 Ble, Nano RP2040, Nano every */
 TYPE1SC::TYPE1SC(Stream &serial, Stream &debug)
@@ -1080,8 +1080,8 @@ int TYPE1SC::setAT(void) {
 }
 
 int TYPE1SC::writeKEY(const char *fileName, int isKEY, const char *key) {
-	char szCmd[2048];
-	char resBuffer[16];
+	char szCmd[2400];
+	char resBuffer[32];
 	int ret;
 
 	TYPE1SC_serial_clearbuf();
@@ -1110,9 +1110,9 @@ int TYPE1SC::writeKEY(const char *fileName, int isKEY, const char *key) {
 		}
 	}
 	/* Debug only */
-	//	for(int i=0; i<sizeof(szCmd); i++){
-	//		SWIR_TRACE(F("%c"),szCmd[i]);
-	//	}
+	//	_debug.println("<------------->");	
+	//	_debug.println(szCmd);	/* Debug KEY Data */
+	//	_debug.println("<------------->");
 
 	ret = writeATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 10000);
 
@@ -1138,19 +1138,17 @@ int TYPE1SC::addCert(int nProfile) {
 
 int TYPE1SC::addHTTPCert(int nProfile) {
 	char szCmd[256];
-	char resBuffer[16];
+	char resBuffer[32];
 	int ret;
 
 	TYPE1SC_serial_clearbuf();
 
 	sprintf(szCmd,
-			"AT%%CERTCFG=\"ADD\",%d,\"kicassl.pem\",\".\"",
+			"AT%%CERTCFG=\"ADD\",%d,\"server.crt\"",
 			nProfile);
 
-	/*
-	   strcpy(szCmd, "AT%CERTCMD=\"DIR\",\"~\"");
-	   ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "user", 3000);
-	 */
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 3000);
+
 	return ret;
 }
 
@@ -1519,7 +1517,7 @@ int TYPE1SC::socketCreate(int service_type, char *remote_address,
 
 int TYPE1SC::socketActivate() {
 	char szCmd[32];
-	char resBuffer[32];
+	char resBuffer[128];
 	int ret;
 
 	TYPE1SC_serial_clearbuf();
@@ -1527,7 +1525,7 @@ int TYPE1SC::socketActivate() {
 	memset(resBuffer, 0, sizeof(resBuffer));
 
 	sprintf(szCmd, "AT%%SOCKETCMD=\"ACTIVATE\",%d", _nSocket);
-	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000);
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 60000);
 
 	return ret;
 }
@@ -1572,6 +1570,21 @@ int TYPE1SC::socketDeActivate() {
 
 	sprintf(szCmd, "AT%%SOCKETCMD=\"DEACTIVATE\",%d", _nSocket);
 	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 20000);
+
+	return ret;
+}
+
+int TYPE1SC::socketSSL(int tlsProfileNo) {
+	char szCmd[32];
+	char resBuffer[32];
+	int ret;
+
+	TYPE1SC_serial_clearbuf();
+
+	memset(resBuffer, 0x0, sizeof(resBuffer));
+
+	sprintf(szCmd, "AT%%SOCKETCMD=\"SSLALLOC\",1,0,%d", tlsProfileNo);
+	ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "OK", 5000);
 
 	return ret;
 }
@@ -1705,7 +1718,7 @@ int TYPE1SC::socketRecv(char *buffer, int bufferSize, int *recvSize) {
 
 int TYPE1SC::socketRecvHTTP(char *buffer, int bufferSize, int *recvSize) {
 	char szCmd[32];
-	char resBuffer[2048]; /* Max 1024 byte Receive */
+	char resBuffer[3032]; /* Max 1500 byte Receive (+32 bytes command buffer) */
 	int RecvSize, ret;
 	char *pszState = NULL;
 	char *pszState2 = NULL;
@@ -1717,7 +1730,7 @@ int TYPE1SC::socketRecvHTTP(char *buffer, int bufferSize, int *recvSize) {
 	if(!readATresponseLineOmitOK(resBuffer, sizeof(resBuffer), "SOCKETEV:1,1", 60000)){
 		memset(resBuffer, 0, sizeof(resBuffer));
 
-		sprintf(szCmd, "AT%%SOCKETDATA=\"RECEIVE\",%d,1000", _nSocket);
+		sprintf(szCmd, "AT%%SOCKETDATA=\"RECEIVE\",%d,1500", _nSocket);
 		ret = sendATcmd(szCmd, resBuffer, sizeof(resBuffer), "SOCKETDATA:", 20000);
 
 		if (!ret) {
