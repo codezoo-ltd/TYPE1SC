@@ -1,8 +1,5 @@
 #include "TYPE1SC.h"
 #include <UnixTime.h> //https://github.com/GyverLibs/UnixTime
-#if !defined(__AVR_ATmega4809__)
-#include <avr/dtostrf.h>
-#endif
 
 #define DebugSerial Serial
 #define M1Serial Serial1
@@ -26,11 +23,15 @@ void setup() {
   /* DHT22 Sensor Initialization */
   dht.begin();
   delay(2000);
-  // put your setup code here, to run once:
-  M1Serial.begin(115200);
-  DebugSerial.begin(115200);
 
+#if defined(ARDUINO_NANO_ESP32)
+  M1Serial.begin(115200, SERIAL_8N1, D0, D1);
+#else
+  M1Serial.begin(115200);
+#endif  
+  DebugSerial.begin(115200);
   DebugSerial.println("TYPE1SC Module Start!!!");
+
   /* Board Reset */
   TYPE1SC.reset();
   delay(2000);

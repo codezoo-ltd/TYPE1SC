@@ -1,4 +1,5 @@
 #include "TYPE1SC.h"
+
 #include "aws_credentials.h"
 
 #define DebugSerial Serial
@@ -10,11 +11,14 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 
-  // put your setup code here, to run once:
+#if defined(ARDUINO_NANO_ESP32)
+  M1Serial.begin(115200, SERIAL_8N1, D0, D1); 
+#else
   M1Serial.begin(115200);
+#endif
   DebugSerial.begin(115200);
-
   DebugSerial.println("TYPE1SC Module Start!!!");
+
   /* Board Reset */
   TYPE1SC.reset();
   delay(2000);

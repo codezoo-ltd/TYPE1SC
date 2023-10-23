@@ -1,5 +1,6 @@
 #include "TYPE1SC.h"
-#include "aws_credentials.h"
+
+#include "http_credentials.h"
 
 #define DebugSerial Serial
 #define M1Serial Serial2 // ESP32
@@ -8,11 +9,11 @@
 #define RST_PIN 18
 #define WAKEUP_PIN 19
 
+#define PROFILE_ID 2
+
 TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
 
 void setup() {
-
-  // put your setup code here, to run once:
   M1Serial.begin(115200);
   DebugSerial.begin(115200);
 
@@ -36,34 +37,22 @@ void setup() {
   DebugSerial.println("TYPE1SC Module Ready!!!");
 
   /* DELETE Certification Profile 1-255 */
-  int delProfile = 9;
+  int delProfile = PROFILE_ID;
   if (TYPE1SC.delCert(delProfile) == 0) {
-    DebugSerial.println("Delete Certification Profile!!!");
+    DebugSerial.println("Delete Certification in Profile..");
   }
   delay(2000);
 
-  /* Write root CA, Don't edit the file name */
-  if (TYPE1SC.writeKEY("rootCA.pem", 0, rootCA) == 0) {
-    DebugSerial.println("Root CA Write!!!");
-  }
-  delay(5000);
-
-  /* Write client CA, Don't edit the file name */
-  if (TYPE1SC.writeKEY("cert.pem.crt", 0, clientCrt) == 0) {
-    DebugSerial.println("Client CA Write!!!");
-  }
-  delay(5000);
-
-  /* Write client KEY, Don't edit the file name */
-  if (TYPE1SC.writeKEY("private.pem.key", 1, clientKey) == 0) {
-    DebugSerial.println("Client KEY Write!!!");
+  /* Write server CA, Don't edit the file name */
+  if (TYPE1SC.writeKEY("server.crt", 0, serverCrt) == 0) {
+    DebugSerial.println("Server CA Write!!!");
   }
   delay(5000);
 
   /* ADD Certification Profile 1-255 */
-  int addProfile = 9;
-  if (TYPE1SC.addCert(addProfile) == 0) {
-    DebugSerial.println("ADD Certification Profile!!!");
+  int addProfile = PROFILE_ID;
+  if (TYPE1SC.addHTTPCert(addProfile) == 0) {
+    DebugSerial.println("ADD Server Certification in Profile..");
   }
 }
 

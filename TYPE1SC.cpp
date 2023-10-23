@@ -20,7 +20,7 @@ extern "C" {
 #define SWIR_TRACE(...) TYPE1SC_trace(__VA_ARGS__);
 #define TRACE_BUFFER_SIZE 256
 #define BG_LINE 30 // Limit 30 Line
-				   //#define __TYPE_1SC_DEBUG		//Debug mode
+//#define __TYPE_1SC_DEBUG		//Debug mode
 
 /* Constructor - Arduino Nano 33 IoT, Nano 33 Ble, Nano RP2040, Nano every */
 TYPE1SC::TYPE1SC(Stream &serial, Stream &debug)
