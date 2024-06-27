@@ -4,7 +4,6 @@
 #include <UnixTime.h> //https://github.com/GyverLibs/UnixTime
 
 #define DebugSerial Serial
-#define M1Serial Serial2
 #define PWR_PIN 5
 #define RST_PIN 18
 #define WAKEUP_PIN 19
@@ -23,6 +22,7 @@ DHT dht(DHTPIN, DHTTYPE);
 UnixTime stamp(9); // Seoul GMT + 09
 
 U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* reset=*/U8X8_PIN_NONE);
+HardwareSerial M1Serial(2); // use ESP32 UART2
 TYPE1SC TYPE1SC(M1Serial, DebugSerial, PWR_PIN, RST_PIN, WAKEUP_PIN);
 
 #define U8LOG_WIDTH 16
@@ -52,7 +52,8 @@ void setup() {
       1); // 0: Update screen with newline, 1: Update screen for every char
 
   // put your setup code here, to run once:
-  M1Serial.begin(115200);
+  /* Serial2 Initialization */
+  M1Serial.begin(115200, SERIAL_8N1, 16, 17); // RXD2 : 16, TXD2 : 17   
   DebugSerial.begin(115200);
 
   DebugSerial.println("TYPE1SC Module Start!!!");
