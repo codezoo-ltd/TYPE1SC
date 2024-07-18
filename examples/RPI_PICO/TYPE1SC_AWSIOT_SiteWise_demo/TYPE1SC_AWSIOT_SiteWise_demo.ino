@@ -42,7 +42,7 @@ void setup() {
     DebugSerial.println("TYPE1SC Module Error!!!");
   }
 
-  /* Network Regsistraiton Check */
+  /* Network Registration Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");
     delay(2000);

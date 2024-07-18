@@ -53,7 +53,7 @@ void setup() {
     u8x8log.print("TYPE1SC Module Error!!!\n");
   }
 
-  /* Network Regsistraiton Check */
+  /* Network Registration Check */
   while (TYPE1SC.canConnect() != 0) {
     DebugSerial.println("Network not Ready !!!");
     u8x8log.print("Network not Ready !!!\n");
